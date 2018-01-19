@@ -19,9 +19,9 @@ public class Utilities {
 		int current_value=value_length;
 		while(current_value!=0)
 		{
-			int value_append=current_value%256;
+			int temp=current_value%256;
 			current_value=current_value/256;
-			res=value_append+res;
+			res=temp+res;
 		}
 		return res;
 	}
@@ -68,4 +68,25 @@ public class Utilities {
         
         file.close();
 	}
+	
+	
+	
+    static final String FILEPATH = "/nfs/ug/homes-0/y/yangxi42/Desktop/ECE419/m1/test/test.file";
+
+    public static void main(String[] args) {
+
+
+        try {
+
+            System.out.println(new String(mmap_read(FILEPATH, 0, 100)));
+            mmap_write(FILEPATH, 0,"tony@!");
+            System.out.println(new String(mmap_read(FILEPATH, 0, 100)));
+            System.out.println(encode_value_length(256*2));
+            System.out.println(decode_value_length("20")+"");
+        } catch (IOException e) {
+       e.printStackTrace();
+       }
+ 
+    }
+
 }
