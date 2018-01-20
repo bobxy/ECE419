@@ -15,6 +15,7 @@ public class Utilities {
 		// TODO Auto-generated constructor stub
 	}
 
+	
 	public static String encode_value_length(int value_length)
 	{
 		String res="";
@@ -39,15 +40,12 @@ public class Utilities {
 		for(int i=3;i>=0;i--)
 		{
 			temp[i]=(byte) (mask&value_length&0xff);
-			System.out.println("current byte is"+temp[i]+"");
 			value_length=value_length>>>7;
 			res=(char)(temp[i]&0xFF)+res;
 			
 		}
 
 		return res;
-
-
 	}
 	
     
