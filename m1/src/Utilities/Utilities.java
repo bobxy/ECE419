@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 
 public class Utilities {
 
@@ -16,28 +18,54 @@ public class Utilities {
 	public static String encode_value_length(int value_length)
 	{
 		String res="";
-		int current_value=value_length;
-		while(current_value!=0)
+		int mask=100000;
+		for(int i=0;i<6;i++)
 		{
-			int temp=current_value%256;
-			current_value=current_value/256;
-			res=temp+res;
+			int append=value_length/mask;
+			res=res+append;
+			
+			value_length=value_length-append*mask;
+			mask=mask/10;
 		}
 		return res;
 	}
 	
+	public static String encode_128_value_length(int value_length)
+	{
+		String res="";
+		int  mask=0x7f;
+		byte[] temp=new byte[4];
+
+		for(int i=3;i>=0;i--)
+		{
+			temp[i]=(byte) (mask&value_length&0xff);
+			System.out.println("current byte is"+temp[i]+"");
+			value_length=value_length>>>7;
+			res=(char)(temp[i]&0xFF)+res;
+			
+		}
+
+		return res;
+
+
+	}
+	
+    
 	public static int decode_value_length(String value_length)
 	{
+		return Integer.parseInt(value_length);
+	}
+	
+	public static int decode_128_value_length(String value_length)
+	{
 		int res=0;
-		int size=value_length.length();
-		if(size==0)
-			return res;
-		for(int i=0;i<size-1;i++)
+		System.out.print("length is:"+value_length.length());
+		for(int i=0;i<value_length.length();i++)
 		{
-				
-			res+=(value_length.charAt(i)-'0')*256;
+			res=res*128;
+			res=res+( value_length.charAt(i)-0);
 		}
-		res+=(value_length.charAt(size-1)-'0');
+		
 		return res;
 	}
 	
@@ -76,16 +104,23 @@ public class Utilities {
     public static void main(String[] args) {
 
 
-        try {
+        //try {
 
-            System.out.println(new String(mmap_read(FILEPATH, 0, 100)));
-            mmap_write(FILEPATH, 0,"tony@!");
-            System.out.println(new String(mmap_read(FILEPATH, 0, 100)));
-            System.out.println(encode_value_length(256*2));
-            System.out.println(decode_value_length("20")+"");
-        } catch (IOException e) {
-       e.printStackTrace();
-       }
+            //System.out.println(new String(mmap_read(FILEPATH, 0, 100)));
+            //mmap_write(FILEPATH, 0,"tony@!");
+           // System.out.println(new String(mmap_read(FILEPATH, 0, 100)));
+            //System.out.println(encode_value_length(500));
+            //System.out.println("is:"+encode_128_value_length(10));
+            System.out.println("is:"+decode_128_value_length(encode_128_value_length(1000))+"haha");
+            //System.out.println(encode_128_value_length(1000));
+            //System.out.println(encode_256_value_length(10000));
+            //System.out.println(encode_256_value_length(10));
+            //System.out.println(encode_256_value_length(10));
+            
+            
+        //} //catch (IOException e) {
+       //e.printStackTrace();
+       //}
  
     }
 
