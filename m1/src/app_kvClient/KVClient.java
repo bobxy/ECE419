@@ -29,8 +29,9 @@ public class KVClient implements IKVClient {
     @Override
     public void newConnection(String hostname, int port) throws Exception{
     	KVS = new KVStore(hostname, port);
-    	//KVS.start();
-    	System.out.print(PROMPT + "New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
+    	KVS.connect();
+    	KVS.start();
+    	System.out.println(PROMPT + "New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
     	return;
     }
 
@@ -42,7 +43,6 @@ public class KVClient implements IKVClient {
     public void run(){
     	try
     	{
-    		newConnection("localhost", 6666);
     		while(true)
     		{
     			System.out.print(PROMPT);
@@ -57,15 +57,27 @@ public class KVClient implements IKVClient {
     				else if(sAction.equals(QUIT))
     					break;
     				else if(sAction.equals(GET))
-    					ValidateReturnedMessage(get(sElements[1]));
+    				{
+    					if(KVS != null)
+    						ValidateReturnedMessage(get(sElements[1]));
+    					else
+    						System.out.println(PROMPT + "Error. Please connect to a server.");
+    				}
     				else if(sAction.equals(PUT))
-    					ValidateReturnedMessage(put(sElements[1], sElements[2]));
+    				{
+    					if(KVS != null)
+    						ValidateReturnedMessage(put(sElements[1], sElements[2]));
+    					else
+    						System.out.println(PROMPT + "Error. Please connect to a server.");
+    				}
     				else if(sAction.equals(CONNECT))
     					newConnection(sElements[1], Integer.parseInt(sElements[2]));
     			}
     			else
-    				System.out.print(PROMPT + "Error. Type help for instructions.");
+    				System.out.println(PROMPT + "Error. Type help for instructions.");
     		}
+    		if(KVS != null)
+    			KVS.disconnect();
     	}
     	catch (Exception e) {
 			System.out.println("Error!");
@@ -150,21 +162,19 @@ public class KVClient implements IKVClient {
     }
     
     private KVMessage get(String key) throws Exception {
-    	KVS.connect();
     	KVMessage message = KVS.get(key);
-    	KVS.disconnect();
     	return message;
     }
     
     private KVMessage put(String key, String value) throws Exception {
-    	KVS.connect();
     	KVMessage message = KVS.put(key, value);
-    	KVS.disconnect();
     	return message;
     }
     
     private void ValidateReturnedMessage(KVMessage message){
     	StatusType code = message.getStatus();
+    	if(code == null)
+    		return;
     	if(code == StatusType.GET_SUCCESS)
     	{
     		System.out.print("GET SUCCESS " + message.getKey() + ": " + message.getValue());

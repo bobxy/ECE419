@@ -6,7 +6,7 @@ public class KVMessageC implements KVMessage{
 	private String value;
 	private StatusType status;
 
-	public KVMessageC(String str) {
+	public KVMessageC() {
 		key = null;
 		value = null;
 		status = null;
