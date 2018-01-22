@@ -10,59 +10,80 @@ public class FIFOCache {
 
 	public FIFOCache(int capacity) {
 		// TODO Auto-generated constructor stub
-		size=capacity;
+		this.max_size=capacity;
+		this.allowed_size=capacity;
+		fifo_cache = new HashMap<String, String>();
+		fifo_list = new LinkedList<String>();
+
 	}
 	
-	void put(String key, String value) throws IOException
+	public int get_capacity()
 	{
-		diskOperation mydisk=new diskOperation();
-		//hash to determine which file to write
-		
-		String file_path="";
-		int file_num=file_number_hash(key,file_num_path.size());
-		
-		file_path=file_num_path.get(file_num);
-		
-		int file_size=file_file_size.get(file_path);
-		
-		int new_size=mydisk.put_disk(file_path,file_size,key, value);
-		
-		file_file_size.put(file_path, new_size);
+		return this.allowed_size;
 	}
 	
-	String get(String key)
+	public boolean inCache(String key)
 	{
-		String res=fifo_cache.get(key);
-		if(res !=null)
+		return fifo_cache.containsKey(key);
+	}
+	
+	public void clearCache()
+	{
+		this.allowed_size = this.max_size;
+		fifo_list.clear();
+		fifo_cache.clear();
+	}
+	public void put(String key, String value) throws IOException
+	{
+        if (this.max_size<=0) {
+            return ;
+        }
+		
+		if(fifo_cache.containsKey(key))
 		{
-			return res;
+			//already in the queue, only need to update the value
+			fifo_cache.put(key, value);
+			//change the order in the queue
+			fifo_list.remove(key);
+			fifo_list.addLast(key);
 		}
 		else
 		{
-			//check queue size
-			String queue_key=
+			if(this.allowed_size>0)
+			{
+				//don't need to evict
+				fifo_cache.put(key, value);
+				fifo_list.addLast(key);
+				//update size
+				this.allowed_size = this.allowed_size-1;
+			}
+			else
+			{
+				//evict first one
+				String removed_key=fifo_list.poll();
+				fifo_cache.remove(removed_key);
+				
+				//add new element;
+				fifo_cache.put(key, value);
+				fifo_list.addLast(key);
+			}
 		}
+
+		
 	}
 	
-	public int file_number_hash(String key,Integer filenums)
+	public String get(String key) throws IOException
 	{
-		int hash = 7;
-		for (int i = 0; i < key.length(); i++) {
-		    hash = hash*31 + key.charAt(i);
-		}
-		return hash%filenums;
+		return fifo_cache.get(key);
 	}
+	
+
 	//size of queue
-	private int size;
-	//queue<key>
-	private Queue<String> fifo_queue = new LinkedList<String>();
-	
+	private int allowed_size;
+	private int max_size;
+
+	private LinkedList<String> fifo_list;
 	//cache<key,value>
-	private HashMap<String, String> fifo_cache = new HashMap<String, String>();	
-	
-	//use an array and hash map to store file to file size info. array for random
-	
-	private HashMap<String, Integer> file_file_size = new HashMap<String, Integer>();
-	
-	private ArrayList<String> file_num_path = new ArrayList<String>();
+	private HashMap<String, String> fifo_cache;	
+
 }

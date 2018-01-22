@@ -1,13 +1,7 @@
 package Utilities;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Arrays;
 
 public class Utilities {
 
@@ -16,7 +10,7 @@ public class Utilities {
 	}
 
 	
-	public static String encode_value_length(int value_length)
+	public  String encode_value_length(int value_length)
 	{
 		String res="";
 		int mask=100000;
@@ -31,7 +25,7 @@ public class Utilities {
 		return res;
 	}
 	
-	public static String encode_128_value_length(int value_length)
+	public static  String encode_128_value_length(int value_length)
 	{
 		String res="";
 		int  mask=0x7f;
@@ -49,12 +43,12 @@ public class Utilities {
 	}
 	
     
-	public static int decode_value_length(String value_length)
+	public  int decode_value_length(String value_length)
 	{
 		return Integer.parseInt(value_length);
 	}
 	
-	public static int decode_128_value_length(String value_length)
+	public static  int decode_128_value_length(String value_length)
 	{
 		int res=0;
 		System.out.print("length is:"+value_length.length());
@@ -67,7 +61,7 @@ public class Utilities {
 		return res;
 	}
 	
-	public static byte[] mmap_read(String file_path,int start_position,int read_length) throws IOException
+	public  byte[] mmap_read(String file_path,int start_position,int read_length) throws IOException
 	{
 
         RandomAccessFile file = new RandomAccessFile(file_path, "r");
@@ -84,7 +78,7 @@ public class Utilities {
 
 	}
 	
-	public static void mmap_write(String file_path,int start_position,String data) throws IOException
+	public  void mmap_write(String file_path,int start_position,String data) throws IOException
 	{
         RandomAccessFile file = new RandomAccessFile(file_path, "rw");
         
