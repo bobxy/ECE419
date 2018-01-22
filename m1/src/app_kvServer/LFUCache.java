@@ -24,7 +24,7 @@ public class LFUCache {
     
 	public int get_capacity()
 	{
-		return allowed_size;
+		return this.allowed_size;
 	}
 	
 	public boolean inCache(String key)

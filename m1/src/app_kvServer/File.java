@@ -11,6 +11,10 @@ public class File {
 		file_file_size = new HashMap<String, Integer>();
 	}
 	
+	public ArrayList<String> get_all_file_path()
+	{
+		return file_num_path;
+	}
 	public int get_file_size(String file_path)
 	{
 		int res=file_file_size.get(file_path);
