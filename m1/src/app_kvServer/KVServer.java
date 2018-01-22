@@ -83,9 +83,9 @@ public class KVServer implements IKVServer {
 			return cache.get(key);
 		else if(inStorage(key))
 		{
-			//String sVal = DO.get(key);
-			//cache.put(key, sVal);
-			//return DO.get(key);
+			String sVal = DO.get(key);
+			cache.put(key, sVal);
+			return sVal;
 		}
 		return "";
 	}
@@ -102,7 +102,7 @@ public class KVServer implements IKVServer {
 
 	@Override
     public void clearStorage(){
-		//DO.clearStorage();
+		DO.clearStorage();
 	}
 
 	@Override
