@@ -28,10 +28,13 @@ public class KVServer implements IKVServer {
 	IKVServer.CacheStrategy CacheStrategy;
 	private ServerSocket serverSocket;
     private boolean running;
+	private Cache cache;
+	private diskOperation DO;
 	
 	public KVServer(int port, int cacheSize, String strategy) {
 		nPort = port;
 		nCacheSize = cacheSize;
+		DO = new diskOperation();
 		if(strategy.equals("FIFO"))
 			CacheStrategy = IKVServer.CacheStrategy.FIFO;
 		else if(strategy.equals("LRU"))
@@ -40,6 +43,7 @@ public class KVServer implements IKVServer {
 			CacheStrategy = IKVServer.CacheStrategy.LFU;
 		else
 			CacheStrategy = IKVServer.CacheStrategy.None;
+		cache = new Cache(CacheStrategy, cacheSize);
 	}
 
 	@Override
@@ -65,16 +69,24 @@ public class KVServer implements IKVServer {
 
 	@Override
     public boolean inStorage(String key){
-		return false;
+		return DO.inStorage(key);
 	}
 
 	@Override
     public boolean inCache(String key){
-		return false;
+		return cache.inCache(key);
 	}
 
 	@Override
     public String getKV(String key) throws Exception{
+		if(inCache(key))
+			return cache.get(key);
+		else if(inStorage(key))
+		{
+			//String sVal = DO.get(key);
+			//cache.put(key, sVal);
+			//return DO.get(key);
+		}
 		return "";
 	}
 
@@ -85,12 +97,12 @@ public class KVServer implements IKVServer {
 
 	@Override
     public void clearCache(){
-		// TODO Auto-generated method stub
+		cache.clearCache();
 	}
 
 	@Override
     public void clearStorage(){
-		// TODO Auto-generated method stub
+		//DO.clearStorage();
 	}
 
 	@Override

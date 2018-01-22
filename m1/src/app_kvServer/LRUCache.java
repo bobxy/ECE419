@@ -11,7 +11,7 @@ class DLinkNode{
     DLinkNode next;    
 }
 
-public class LRUCache extends Cache{
+public class LRUCache{
 
 	public LRUCache(int capacity) {
 		// TODO Auto-generated constructor stub

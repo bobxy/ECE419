@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class FIFOCache extends Cache{	
+public class FIFOCache{	
 
 	public FIFOCache(int capacity) {
 		// TODO Auto-generated constructor stub
@@ -33,7 +33,7 @@ public class FIFOCache extends Cache{
 		fifo_list.clear();
 		fifo_cache.clear();
 	}
-	public void put(String key, String value) throws IOException
+	public void put(String key, String value)
 	{
         if (this.max_size<=0) {
             return ;
@@ -72,7 +72,7 @@ public class FIFOCache extends Cache{
 		
 	}
 	
-	public String get(String key) throws IOException
+	public String get(String key)
 	{
 		return fifo_cache.get(key);
 	}
