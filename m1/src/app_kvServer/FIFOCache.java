@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class FIFOCache {	
+public class FIFOCache extends Cache{	
 
 	public FIFOCache(int capacity) {
 		// TODO Auto-generated constructor stub
