@@ -13,7 +13,7 @@ public class diskOperation {
 		//populate lookup
 		myutilities=new Utilities();
 		lookup_table = new HashMap<String, Integer>();
-		myFile = new File();
+		myFile = new FileSystem();
 	}
 	
 	public boolean inStorage(String key)
@@ -107,7 +107,13 @@ public class diskOperation {
 			
 	}
 
-	
+	public void clearStorage(){
+		//clean up lookup table
+		lookup_table.clear();
+		//clean up file system
+		myFile.clearFile();
+		
+	}
 	
 	
 	
@@ -187,6 +193,6 @@ public class diskOperation {
 	
 	private HashMap<String, Integer> lookup_table;	
 	private Utilities myutilities;
-	private File myFile;
+	private FileSystem myFile;
 
 }
