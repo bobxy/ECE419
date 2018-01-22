@@ -61,15 +61,11 @@ public class diskOperation {
 		}
 	}
 	
-    public String get_disk(String file_path,String key) throws IOException{
+    public String get(String key) throws IOException{
         	String res="";
         	int position=0;
         	position=lookup_table.get(key);
-        	if(!get_EI_valid(file_path,position))
-        	{
-        		//if invalid return empty
-        		return res;
-        	}
+        	String file_path=myFile.get_file_path(key);
         		
         	int read_length=get_EI_value_length(file_path,position);
         	int key_length=get_EI_key_length(file_path,position);
@@ -79,7 +75,9 @@ public class diskOperation {
         	return res;
 	}
     
-	public void put_disk(String file_path, int file_size, String key, String value) throws IOException{
+	public void put(String key, String value) throws IOException{
+		String file_path=myFile.get_file_path(key);
+		int file_size=myFile.get_file_size(file_path);
 		//append to the end of file
 		int new_file_size=0;
 		String ei="";
