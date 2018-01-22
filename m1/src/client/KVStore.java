@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 import client.ClientSocketListenerInterface.SocketStatus;
 
 import common.messages.KVMessage;
+import common.messages.KVMessageC;
 
 public class KVStore extends Thread implements KVCommInterface {
 	/**
@@ -26,15 +27,16 @@ public class KVStore extends Thread implements KVCommInterface {
 	private Set<ClientSocketListener> listeners;
 	private ClientSocketListener listener;
 	private MessageStream stream;
-	private KVMessage kvmsg;
-	
+	private KVMessageC kvmsg;
+	private boolean bReceived;
 	
 	public KVStore(String address, int port) {
 		// TODO Auto-generated method stub
 		addr = address;
 		portnum = port;
-		received = false;
 		listeners = new HashSet<ClientSocketListener>();
+		bReceived = false;
+		kvmsg = new KVMessageC();
 	}
 
 	@Override
@@ -64,12 +66,12 @@ public class KVStore extends Thread implements KVCommInterface {
 	
 	public void run() {
 		try {
-			
 			stream = new MessageStream (clientSocket.getOutputStream(),clientSocket.getInputStream());
 			
 			while(isRunning()) {
 				try {
 					TextMessage latestMsg = stream.receiveMessage();
+					bReceived = true;
 					for(ClientSocketListener listener : listeners) {
 						kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
 					}
@@ -135,8 +137,9 @@ public class KVStore extends Thread implements KVCommInterface {
 			disconnect();
 		}
 		
+		while(bReceived == false);
+		bReceived = false;
 		return kvmsg;
-		
 	}
 
 	@Override
@@ -144,16 +147,15 @@ public class KVStore extends Thread implements KVCommInterface {
 		// TODO Auto-generated method stub 
 		try {
 			
-			String msg = key + " " + "null" + "0";
+			String msg = key + " null" + " 0";
 			stream.sendMessage(new TextMessage(msg));
 		} catch (IOException e){
 			System.out.println("Client> " + "Error! " +  "Unable to send message!");
 			disconnect();
 		}
-		
+		while(bReceived == false);
+		bReceived = false;
 		return kvmsg;
 	}
-	
- 	
 }
 

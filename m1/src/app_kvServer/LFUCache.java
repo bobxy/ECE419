@@ -10,7 +10,7 @@ class Node {
     Node prev = null;
 }
 
-public class LFUCache extends Cache{
+public class LFUCache{
 
     public LFUCache(int capacity) {
     	// TODO Auto-generated constructor stub
