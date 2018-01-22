@@ -32,6 +32,8 @@ public interface KVMessage {
 	 */
 	public StatusType getStatus();
 	
+	public void StrToKVM (String str);
+	
 }
 
 
