@@ -89,31 +89,5 @@ public class Utilities {
         file.close();
 	}
 	
-	
-	
-    static final String FILEPATH = "/nfs/ug/homes-0/y/yangxi42/Desktop/ECE419/m1/test/test.file";
-
-    public static void main(String[] args) {
-
-
-        //try {
-
-            //System.out.println(new String(mmap_read(FILEPATH, 0, 100)));
-            //mmap_write(FILEPATH, 0,"tony@!");
-           // System.out.println(new String(mmap_read(FILEPATH, 0, 100)));
-            //System.out.println(encode_value_length(500));
-            //System.out.println("is:"+encode_128_value_length(10));
-            System.out.println("is:"+decode_128_value_length(encode_128_value_length(1000))+"haha");
-            //System.out.println(encode_128_value_length(1000));
-            //System.out.println(encode_256_value_length(10000));
-            //System.out.println(encode_256_value_length(10));
-            //System.out.println(encode_256_value_length(10));
-            
-            
-        //} //catch (IOException e) {
-       //e.printStackTrace();
-       //}
- 
-    }
 
 }

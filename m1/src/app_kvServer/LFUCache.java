@@ -10,7 +10,7 @@ class Node {
     Node prev = null;
 }
 
-public class LFUCache {
+public class LFUCache extends Cache{
 
     public LFUCache(int capacity) {
     	// TODO Auto-generated constructor stub
@@ -24,7 +24,7 @@ public class LFUCache {
     
 	public int get_capacity()
 	{
-		return allowed_size;
+		return this.allowed_size;
 	}
 	
 	public boolean inCache(String key)
