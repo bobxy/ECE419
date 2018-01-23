@@ -94,7 +94,10 @@ public class KVServer extends Thread implements IKVServer {
 
 	@Override
     public void putKV(String key, String value) throws Exception{
-		// TODO Auto-generated method stub
+
+		DO.put(key, value);
+		if(inCache(key))
+			cache.put(key, value);
 	}
 
 	@Override
@@ -131,7 +134,7 @@ public class KVServer extends Thread implements IKVServer {
 	                
 	                logger.info("Connected to " 
 	                		+ client.getInetAddress().getHostName() 
-	                		+  " on port " + client.getPort());
+	                		+  " on port " + client.getPort());  
 	            } catch (IOException e) {
 	            	logger.error("Error! " +
 	            			"Unable to establish connection. \n", e);
