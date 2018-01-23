@@ -26,13 +26,14 @@ public class ClientConnection implements Runnable {
 	private Socket clientSocket;
 	private InputStream input;
 	private OutputStream output;
-	
+	private KVServer kvs;
 	/**
 	 * Constructs a new CientConnection object for a given TCP socket.
 	 * @param clientSocket the Socket object for the client connection.
 	 */
-	public ClientConnection(Socket clientSocket) {
+	public ClientConnection(Socket clientSocket, KVServer server) {
 		this.clientSocket = clientSocket;
+		this.kvs = server;
 		this.isOpen = true;
 	}
 	
@@ -48,6 +49,7 @@ public class ClientConnection implements Runnable {
 			while(isOpen) {
 				try {
 					TextMessage latestMsg = receiveMessage();
+					
 					sendMessage(latestMsg);
 					
 				/* connection either terminated by the client or lost due to 
@@ -159,6 +161,6 @@ public class ClientConnection implements Runnable {
 		return msg;
     }
 	
-
+	
 	
 }

@@ -23,7 +23,7 @@ public class KVServer extends Thread implements IKVServer {
 	 *           and "LFU".
 	 */
 	private static Logger logger = Logger.getRootLogger();
-	private String nHostname;
+	private String sHostname;
 	private int nPort;
 	private int nCacheSize;
 	IKVServer.CacheStrategy CacheStrategy;
@@ -33,7 +33,7 @@ public class KVServer extends Thread implements IKVServer {
 	private diskOperation DO;
 	
 	public KVServer(int port, int cacheSize, String strategy, String hostname) {
-		nHostname = hostname;
+		sHostname = hostname;
 		nPort = port;
 		nCacheSize = cacheSize;
 		DO = new diskOperation();
@@ -55,8 +55,7 @@ public class KVServer extends Thread implements IKVServer {
 
 	@Override
     public String getHostname(){
-		// TODO Auto-generated method stub
-		return nHostname;
+		return sHostname;
 	}
 
 	@Override
@@ -76,7 +75,7 @@ public class KVServer extends Thread implements IKVServer {
 
 	@Override
     public boolean inCache(String key){
-		return cache.inCache(key);
+		return (CacheStrategy != IKVServer.CacheStrategy.None) && cache.inCache(key);
 	}
 
 	@Override
@@ -129,7 +128,7 @@ public class KVServer extends Thread implements IKVServer {
 	            try {
 	                Socket client = serverSocket.accept();                
 	                ClientConnection connection = 
-	                		new ClientConnection(client);
+	                		new ClientConnection(client, this);
 	                new Thread(connection).start();
 	                
 	                logger.info("Connected to " 
