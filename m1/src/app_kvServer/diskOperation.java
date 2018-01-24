@@ -14,6 +14,7 @@ public class diskOperation {
 		myutilities=new Utilities();
 		lookup_table = new HashMap<String, Integer>();
 		myFile = new FileSystem();
+		myFile.insert_new_file("/nfs/ug/homes-5/l/laiyong/Desktop/ECE419/m1/test.txt");
 	}
 	
 	public boolean inStorage(String key)

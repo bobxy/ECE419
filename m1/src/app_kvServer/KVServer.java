@@ -171,10 +171,10 @@ public class KVServer extends Thread implements IKVServer {
 				System.out.println("Error! Invalid number of arguments!");
 				System.out.println("Usage: Server <hostname> <port> <cache_size> <cache_strategy>!");
 			} else {
-				String hostname = args[0];
-				int port = Integer.parseInt(args[1]);
-				int cachesize = Integer.parseInt(args[2]);
-				String strategy = args[3];
+				String hostname = args[3];
+				int port = Integer.parseInt(args[0]);
+				int cachesize = Integer.parseInt(args[1]);
+				String strategy = args[2];
 				
 				new KVServer(port, cachesize, strategy, hostname).start();
 			}
