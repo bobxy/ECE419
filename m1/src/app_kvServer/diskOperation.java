@@ -14,7 +14,7 @@ public class diskOperation {
 		myutilities=new Utilities();
 		lookup_table = new HashMap<String, Integer>();
 		myFile = new FileSystem();
-		myFile.insert_new_file("/nfs/ug/homes-5/l/laiyong/Desktop/ECE419/m1/test.txt");
+		myFile.insert_file("test.file");
 	}
 	
 	public boolean inStorage(String key)
@@ -37,17 +37,19 @@ public class diskOperation {
 	public void load_lookup_table() throws IOException
 	{
 		ArrayList<String> myfiles=myFile.get_all_file_path();
-		
+		System.out.print("goes to here\n");
 		for(int i=0;i<myfiles.size();i++)
 		{
+			System.out.print("goes to here2\n");
 			int position=0;
 			String file_path=myfiles.get(i);
 			while(position<myFile.get_file_size(file_path))
 			{
-				
+				System.out.print("my position is"+position+"\n");
 				boolean isvalid=get_EI_valid(file_path,position);
 				if(isvalid)
 				{
+					System.out.print("goes to here3\n");
 					//if valid, update lookup table
 					int key_length=get_EI_key_length(file_path,position);
 					int value_length=get_EI_value_length(file_path,position);

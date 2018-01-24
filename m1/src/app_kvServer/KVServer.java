@@ -32,11 +32,12 @@ public class KVServer extends Thread implements IKVServer {
 	private Cache cache;
 	private diskOperation DO;
 	
-	public KVServer(int port, int cacheSize, String strategy, String hostname) {
+	public KVServer(int port, int cacheSize, String strategy, String hostname) throws IOException {
 		sHostname = hostname;
 		nPort = port;
 		nCacheSize = cacheSize;
 		DO = new diskOperation();
+		DO.load_lookup_table();
 		if(strategy.equals("FIFO"))
 			CacheStrategy = IKVServer.CacheStrategy.FIFO;
 		else if(strategy.equals("LRU"))

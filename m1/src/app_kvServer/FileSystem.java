@@ -31,6 +31,12 @@ public class FileSystem {
 		file_file_size.put(file_path, 0);
 	}
 	
+	public void insert_file(String file_path)
+	{
+		file_num_path.add(file_path);
+		File file =new File(file_path);
+		file_file_size.put(file_path, (int) file.length());
+	}
 	public String get_file_path(String key)
 	{
 		String res=file_num_path.get(get_file_number(key));
