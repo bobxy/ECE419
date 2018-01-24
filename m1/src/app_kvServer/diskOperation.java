@@ -43,6 +43,7 @@ public class diskOperation {
 			System.out.print("goes to here2\n");
 			int position=0;
 			String file_path=myfiles.get(i);
+			int total_length=0;
 			while(position<myFile.get_file_size(file_path))
 			{
 				System.out.print("my position is"+position+"\n");
@@ -53,12 +54,14 @@ public class diskOperation {
 					//if valid, update lookup table
 					int key_length=get_EI_key_length(file_path,position);
 					int value_length=get_EI_value_length(file_path,position);
-					int total_length=6+key_length+value_length;
+					total_length=0;
+					total_length=6+key_length+value_length;
 					String key=get_key(file_path,position,key_length);
 					lookup_table.put(key, position);
-					position=1+total_length;
+					
 					
 				}
+				position=1+total_length;
 			}
 			
 		}
@@ -87,6 +90,7 @@ public class diskOperation {
 		if(lookup_table.containsKey(key))
 		{
 			//need to set invalid for old key value
+			System.out.println("set invalid");
 			int position=lookup_table.get(key);
 			set_EI_invalid(file_path,position);
 		}
