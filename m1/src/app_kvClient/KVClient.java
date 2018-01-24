@@ -128,8 +128,17 @@ public class KVClient implements IKVClient {
 	    		if(nValueStart >= nCommandLength || nValueEnd != nCommandLength - 1)
 	    			return null;
 	    		
-	    		String[] ret = {sAction, sKey, sCommand.substring(nValueStart, nValueEnd)};
-	    		return ret;
+	    		String sValue = sCommand.substring(nValueStart, nValueEnd);
+	    		if(sValue.length() > 0)
+	    		{
+	    			String[] ret = {sAction, sKey, sValue};
+	    			return ret;
+	    		}
+	    		else
+	    		{
+	    			System.out.println(PROMPT + "Value cannot be empty. To delete, please use \"delete\" command.");
+	    			return null;
+	    		}
 	    	}
 	    	
 	    	//delete command
