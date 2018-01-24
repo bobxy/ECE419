@@ -177,31 +177,31 @@ public class KVClient implements IKVClient {
     		return;
     	if(code == StatusType.GET_SUCCESS)
     	{
-    		System.out.print("GET SUCCESS " + message.getKey() + ": " + message.getValue());
+    		System.out.println("GET SUCCESS " + message.getKey() + ": " + message.getValue());
     	}
     	else if(code == StatusType.PUT_SUCCESS)
     	{
-    		System.out.print("PUT SUCCESS " + message.getKey() + ": " + message.getValue());
+    		System.out.println("PUT SUCCESS " + message.getKey() + ": " + message.getValue());
     	}
     	else if(code == StatusType.PUT_UPDATE)
     	{
-    		System.out.print("UPDATE SUCCESS " + message.getKey() + ": " + message.getValue());
+    		System.out.println("UPDATE SUCCESS " + message.getKey() + ": " + message.getValue());
     	}
     	else if(code == StatusType.DELETE_SUCCESS)
     	{
-    		System.out.print("DELETE SUCCESS " + message.getKey());
+    		System.out.println("DELETE SUCCESS " + message.getKey());
     	}
     	else if(code == StatusType.GET_ERROR)
     	{
-    		System.out.print("GET ERROR");
+    		System.out.println("GET ERROR");
     	}
     	else if(code == StatusType.PUT_ERROR)
     	{
-    		System.out.print("PUT ERROR");
+    		System.out.println("PUT ERROR");
     	}
     	else if(code == StatusType.DELETE_ERROR)
     	{
-    		System.out.print("DELETE ERROR");
+    		System.out.println("DELETE ERROR");
     	}
     }
     
