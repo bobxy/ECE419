@@ -53,6 +53,12 @@ public class ClientConnection implements Runnable {
 				KVMessageC message = new KVMessageC();
 				try {
 					TextMessage latestMsg = receiveMessage();
+					
+					if (latestMsg.getMsg().equals("")){
+						sendMessage(new TextMessage(latestMsg.getMsg()));
+					}
+					else
+					{
 					message.StrToKVM(latestMsg.getMsg());
 					String sKey = message.getKey();
 					String sValue = "";
@@ -92,7 +98,8 @@ public class ClientConnection implements Runnable {
 					
 				/* connection either terminated by the client or lost due to 
 				 * network problems*/	
-				} catch (IOException ioe) {
+				} 
+				}catch (IOException ioe) {
 					logger.error("Error! Connection lost!");
 					isOpen = false;
 				} 
