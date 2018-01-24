@@ -130,7 +130,7 @@ public class KVStore extends Thread implements KVCommInterface {
 		//send it to server
 		try {
 			
-			String msg = "3 " + key + " " + value + "\r"; 
+			String msg = "3 " + key + " " + value + "\n"; 
 			stream.sendMessage(new TextMessage(msg));
 		} catch (IOException e){
 			System.out.println("Client> " + "Error! " +  "Unable to send message!");
@@ -154,7 +154,7 @@ public class KVStore extends Thread implements KVCommInterface {
 		// TODO Auto-generated method stub 
 		try {
 			
-			String msg = "0 " + key + "\r";
+			String msg = "0 " + key + "\n";
 			stream.sendMessage(new TextMessage(msg));
 		} catch (IOException e){
 			System.out.println("Client> " + "Error! " +  "Unable to send message!");
