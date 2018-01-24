@@ -27,10 +27,14 @@ public class KVMessageC implements KVMessage{
 	
 	public void StrToKVM (String str){
 		// TODO Auto-generated constructor stub
-		String[] splited = str.split("\\s+");
-		key = splited[0];
-		value = splited[1];
-		status = StatusType.values()[Integer.parseInt(splited[2])];
+		String[] splited = str.split(" ");
+		status = StatusType.values()[Integer.parseInt(splited[0])];
+		key = splited[1];
+		int nKeyLength = key.length();
+		if(3 + nKeyLength >= str.length())
+			value = "";
+		else
+			value = str.substring(3 + nKeyLength);
 	}
 
 }

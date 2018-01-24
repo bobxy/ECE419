@@ -10,7 +10,7 @@ import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-public class KVServer implements IKVServer {
+public class KVServer extends Thread implements IKVServer {
 
 	/**
 	 * Start KV Server at given port
@@ -23,6 +23,7 @@ public class KVServer implements IKVServer {
 	 *           and "LFU".
 	 */
 	private static Logger logger = Logger.getRootLogger();
+	private String sHostname;
 	private int nPort;
 	private int nCacheSize;
 	IKVServer.CacheStrategy CacheStrategy;
@@ -31,7 +32,8 @@ public class KVServer implements IKVServer {
 	private Cache cache;
 	private diskOperation DO;
 	
-	public KVServer(int port, int cacheSize, String strategy) {
+	public KVServer(int port, int cacheSize, String strategy, String hostname) {
+		sHostname = hostname;
 		nPort = port;
 		nCacheSize = cacheSize;
 		DO = new diskOperation();
@@ -53,8 +55,7 @@ public class KVServer implements IKVServer {
 
 	@Override
     public String getHostname(){
-		// TODO Auto-generated method stub
-		return null;
+		return sHostname;
 	}
 
 	@Override
@@ -74,7 +75,7 @@ public class KVServer implements IKVServer {
 
 	@Override
     public boolean inCache(String key){
-		return cache.inCache(key);
+		return (CacheStrategy != IKVServer.CacheStrategy.None) && cache.inCache(key);
 	}
 
 	@Override
@@ -92,7 +93,10 @@ public class KVServer implements IKVServer {
 
 	@Override
     public void putKV(String key, String value) throws Exception{
-		// TODO Auto-generated method stub
+
+		DO.put(key, value);
+		if(inCache(key))
+			cache.put(key, value);
 	}
 
 	@Override
@@ -124,12 +128,12 @@ public class KVServer implements IKVServer {
 	            try {
 	                Socket client = serverSocket.accept();                
 	                ClientConnection connection = 
-	                		new ClientConnection(client);
+	                		new ClientConnection(client, this);
 	                new Thread(connection).start();
 	                
 	                logger.info("Connected to " 
 	                		+ client.getInetAddress().getHostName() 
-	                		+  " on port " + client.getPort());
+	                		+  " on port " + client.getPort());  
 	            } catch (IOException e) {
 	            	logger.error("Error! " +
 	            			"Unable to establish connection. \n", e);
@@ -158,5 +162,30 @@ public class KVServer implements IKVServer {
             }
             return false;
         }
+    }
+    
+    public static void main(String[] args) {
+    	try {
+			new LogSetup("logs/server.log", Level.ALL);
+			if(args.length != 4) {
+				System.out.println("Error! Invalid number of arguments!");
+				System.out.println("Usage: Server <hostname> <port> <cache_size> <cache_strategy>!");
+			} else {
+				String hostname = args[3];
+				int port = Integer.parseInt(args[0]);
+				int cachesize = Integer.parseInt(args[1]);
+				String strategy = args[2];
+				
+				new KVServer(port, cachesize, strategy, hostname).start();
+			}
+		} catch (IOException e) {
+			System.out.println("Error! Unable to initialize logger!");
+			e.printStackTrace();
+			System.exit(1);
+		} catch (NumberFormatException nfe) {
+			System.out.println("Error! Invalid argument <port>! Not a number!");
+			System.out.println("Usage: Server <port>!");
+			System.exit(1);
+		}
     }
 }

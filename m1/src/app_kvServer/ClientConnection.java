@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import client.TextMessage;
+import common.messages.KVMessage;
+import common.messages.KVMessage.StatusType;
+import common.messages.KVMessageC;
 import org.apache.log4j.*;
 
 
@@ -26,13 +29,14 @@ public class ClientConnection implements Runnable {
 	private Socket clientSocket;
 	private InputStream input;
 	private OutputStream output;
-	
+	private KVServer kvs;
 	/**
 	 * Constructs a new CientConnection object for a given TCP socket.
 	 * @param clientSocket the Socket object for the client connection.
 	 */
-	public ClientConnection(Socket clientSocket) {
+	public ClientConnection(Socket clientSocket, KVServer server) {
 		this.clientSocket = clientSocket;
+		this.kvs = server;
 		this.isOpen = true;
 	}
 	
@@ -40,28 +44,69 @@ public class ClientConnection implements Runnable {
 	 * Initializes and starts the client connection. 
 	 * Loops until the connection is closed or aborted by the client.
 	 */
-	public void run() {
+	public void run(){
 		try {
 			output = clientSocket.getOutputStream();
 			input = clientSocket.getInputStream();
 		
 			while(isOpen) {
+				KVMessageC message = new KVMessageC();
 				try {
 					TextMessage latestMsg = receiveMessage();
-					sendMessage(latestMsg);
+					message.StrToKVM(latestMsg.getMsg());
+					String sKey = message.getKey();
+					String sValue = "";
+					String sRet = "";
+					if(message.getStatus() == StatusType.PUT)
+					{
+						boolean bOld = kvs.inStorage(sKey);
+						boolean bDelete = (message.getValue().length() == 0);
+						if(!bOld && bDelete)
+							sRet = "8 " + sKey;
+						else
+							kvs.putKV(sKey, message.getValue());
+						
+						int nStatus = -1;
+						if(bOld && bDelete)
+							nStatus = 7;
+						else if(bOld && !bDelete)
+							nStatus = 5;
+						else
+							nStatus = 4;
+						sRet = Integer.toString(nStatus) + " " + sKey + " " + message.getValue();
+							
+					}
+					else if(message.getStatus() == StatusType.GET)
+					{
+						sValue = kvs.getKV(sKey);
+						if(sValue.length() == 0)
+						{
+							sRet = "1 " + sKey;
+						}
+						else
+							sRet = "2 " + sKey + " " + sValue;
+					}
+					
+					
+					sendMessage(new TextMessage(sRet));
 					
 				/* connection either terminated by the client or lost due to 
 				 * network problems*/	
 				} catch (IOException ioe) {
 					logger.error("Error! Connection lost!");
 					isOpen = false;
+				} 
+				catch (Exception e)
+				{
+					logger.error("Error!", e);
 				}				
 			}
 			
 		} catch (IOException ioe) {
 			logger.error("Error! Connection could not be established!", ioe);
 			
-		} finally {
+		}
+		finally {
 			
 			try {
 				if (clientSocket != null) {
@@ -159,6 +204,6 @@ public class ClientConnection implements Runnable {
 		return msg;
     }
 	
-
+	
 	
 }
