@@ -23,6 +23,7 @@ public class KVClient implements IKVClient {
 	private static final String DELETE = "delete";
 	private static final String QUIT = "quit";
 	private static final String CONNECT = "connect";
+	private static final String SKIP = "skip";
 	private KVStore KVS;
 	
 	
@@ -61,20 +62,22 @@ public class KVClient implements IKVClient {
     					if(KVS != null)
     						ValidateReturnedMessage(get(sElements[1]));
     					else
-    						System.out.println(PROMPT + "Error. Please connect to a server.");
+    						System.out.println("Error. Please connect to a server.");
     				}
     				else if(sAction.equals(PUT))
     				{
     					if(KVS != null)
     						ValidateReturnedMessage(put(sElements[1], sElements[2]));
     					else
-    						System.out.println(PROMPT + "Error. Please connect to a server.");
+    						System.out.println("Error. Please connect to a server.");
     				}
     				else if(sAction.equals(CONNECT))
     					newConnection(sElements[1], Integer.parseInt(sElements[2]));
+    				else if(sAction.equals(SKIP))
+    					continue;
     			}
     			else
-    				System.out.println(PROMPT + "Error. Type help for instructions.");
+    				System.out.println("Error. Type help for instructions.");
     		}
     		if(KVS != null)
     			KVS.disconnect();
@@ -136,8 +139,9 @@ public class KVClient implements IKVClient {
 	    		}
 	    		else
 	    		{
-	    			System.out.println(PROMPT + "Value cannot be empty. To delete, please use \"delete\" command.");
-	    			return null;
+	    			String[] ret = {SKIP};
+	    			System.out.println("Value cannot be empty. To delete, please use \"delete\" command.");
+	    			return ret;
 	    		}
 	    	}
 	    	
@@ -162,12 +166,12 @@ public class KVClient implements IKVClient {
     }
     
     private void help(){
-    	System.out.print(PROMPT + "Please follow the following foramts for the instructions");
-    	System.out.print(PROMPT + PUT + " key" + " \"value\"");
-    	System.out.print(PROMPT + GET + " key");
-    	System.out.print(PROMPT + DELETE + " key");
-    	System.out.print(PROMPT + CONNECT + " host" + " port");
-    	System.out.print(PROMPT + QUIT);
+    	System.out.println("Please follow the following foramts for the instructions");
+    	System.out.println(PUT + " key" + " \"value\"");
+    	System.out.println(GET + " key");
+    	System.out.println(DELETE + " key");
+    	System.out.println(CONNECT + " host" + " port");
+    	System.out.println(QUIT);
     }
     
     private KVMessage get(String key) throws Exception {
