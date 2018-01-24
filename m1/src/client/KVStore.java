@@ -71,9 +71,9 @@ public class KVStore extends Thread implements KVCommInterface {
 			while(isRunning()) {
 				try {
 					TextMessage latestMsg = stream.receiveMessage();
-					bReceived = true;
 					for(ClientSocketListener listener : listeners) {
 						kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
+						bReceived = true;
 					}
 				} catch (IOException ioe) {
 					if(isRunning()) {
@@ -137,8 +137,15 @@ public class KVStore extends Thread implements KVCommInterface {
 			disconnect();
 		}
 		
-		while(bReceived == false);
-		bReceived = false;
+		while(true)
+		{
+			Thread.sleep(1);
+			if(bReceived)
+			{
+				bReceived = false;
+				break;
+			}
+		}
 		return kvmsg;
 	}
 
@@ -147,14 +154,21 @@ public class KVStore extends Thread implements KVCommInterface {
 		// TODO Auto-generated method stub 
 		try {
 			
-			String msg = "0 " + key + " null\r";
+			String msg = "0 " + key + "\r";
 			stream.sendMessage(new TextMessage(msg));
 		} catch (IOException e){
 			System.out.println("Client> " + "Error! " +  "Unable to send message!");
 			disconnect();
 		}
-		while(bReceived == false);
-		bReceived = false;
+		while(true)
+		{
+			Thread.sleep(1);
+			if(bReceived)
+			{
+				bReceived = false;
+				break;
+			}
+		}
 		return kvmsg;
 	}
 }
