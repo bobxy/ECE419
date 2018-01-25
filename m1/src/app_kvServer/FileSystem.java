@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -35,6 +36,13 @@ public class FileSystem {
 	{
 		file_num_path.add(file_path);
 		File file =new File(file_path);
+		if(!file.exists())
+			try {
+				file.createNewFile();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		file_file_size.put(file_path, (int) file.length());
 	}
 	public String get_file_path(String key)
@@ -59,16 +67,13 @@ public class FileSystem {
 		file_file_size.clear();
 		for(int i=0;i<file_num_path.size();i++)
 		{
-			File file = new File(file_num_path.get(i));
-	         
-	        if(file.delete())
-	        {
-	            System.out.println("File deleted successfully");
-	        }
-	        else
-	        {
-	            System.out.println("Failed to delete the file");
-	        }
+
+			File file = new File(file_num_path.get(i)).getAbsoluteFile();
+
+			if(file.exists())
+			{
+				file.delete();
+			}
 		}
 		file_num_path.clear();
 	}
