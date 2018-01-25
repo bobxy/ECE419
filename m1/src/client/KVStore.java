@@ -4,13 +4,14 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
-
+import Utilities.Utilities;
 import org.apache.log4j.Logger;
 
 import client.ClientSocketListenerInterface.SocketStatus;
 
 import common.messages.KVMessage;
 import common.messages.KVMessageC;
+import common.messages.KVMessage.StatusType;
 
 public class KVStore extends Thread implements KVCommInterface {
 	/**
@@ -29,6 +30,7 @@ public class KVStore extends Thread implements KVCommInterface {
 	private MessageStream stream;
 	private KVMessageC kvmsg;
 	private boolean bReceived;
+	private Utilities util;
 	
 	public KVStore(String address, int port) {
 		// TODO Auto-generated method stub
@@ -37,6 +39,7 @@ public class KVStore extends Thread implements KVCommInterface {
 		listeners = new HashSet<ClientSocketListener>();
 		bReceived = false;
 		kvmsg = new KVMessageC();
+		util = new Utilities();
 	}
 
 	@Override
@@ -44,16 +47,18 @@ public class KVStore extends Thread implements KVCommInterface {
 		// TODO Auto-generated method stub
 		clientSocket = new Socket(addr, portnum);
 		listener = new ClientSocketListener(addr,portnum);
+		stream = new MessageStream (clientSocket.getOutputStream(),clientSocket.getInputStream());
 		addListener(listener);
 		setRunning(true);
 		logger.info("Connection established");
+		System.out.println("Connection established");
 	}
 
 	@Override
 	public void disconnect() {
 		// TODO Auto-generated method stub
 		logger.info("try to close connection ...");
-		
+		System.out.println("try to close connection ...");
 		try {
 			tearDownConnection();
 			for(ClientSocketListener listener : listeners) {
@@ -66,15 +71,11 @@ public class KVStore extends Thread implements KVCommInterface {
 	
 	public void run() {
 		try {
-			
-			connect();
-			stream = new MessageStream (clientSocket.getOutputStream(),clientSocket.getInputStream());
-			
 			while(isRunning()) {
 				try {
 					TextMessage latestMsg = stream.receiveMessage();
 					for(ClientSocketListener listener : listeners) {
-						kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
+						kvmsg.StrToKVM(latestMsg.getMsg());
 						bReceived = true;
 					}
 				} catch (IOException ioe) {
@@ -92,9 +93,6 @@ public class KVStore extends Thread implements KVCommInterface {
 					}
 				}				
 			}
-		} catch (IOException ioe) {
-			logger.error("Connection could not be established!");
-			
 		} catch (Exception e){}
 		finally {
 			if(isRunning()) {
@@ -116,11 +114,15 @@ public class KVStore extends Thread implements KVCommInterface {
 		setRunning(false);
 		logger.info("tearing down the connection ...");
 		if (clientSocket != null) {
-			stream.streamClose();
 			clientSocket.close();
 			clientSocket = null;
-			logger.info("connection closed!");
 		}
+		if(stream != null)
+		{
+			stream.streamClose();
+			stream = null;
+		}
+		logger.info("connection closed!");
 	}
 	
 	private void addListener(ClientSocketListener listener){
@@ -132,7 +134,11 @@ public class KVStore extends Thread implements KVCommInterface {
 		//turn string into textmsg obj
 		//send it to server
 		try {
-			
+			if(util.InvaildKey(key) || value == null )
+	    	{
+	    		KVMessageC message = new KVMessageC(key, value, StatusType.PUT_ERROR);
+	    		return message;
+	    	}
 			String msg = "3 " + key + " " + value; 
 			stream.sendMessage(new TextMessage(msg));
 		} catch (IOException e){

@@ -11,6 +11,12 @@ public class KVMessageC implements KVMessage{
 		value = null;
 		status = null;
 	}
+	
+	public KVMessageC(String sKey, String sValue, StatusType statusType) {
+		key = sKey;
+		value = sValue;
+		status = statusType;
+	}
 
 	public String getKey(){
 		return key;
@@ -26,7 +32,6 @@ public class KVMessageC implements KVMessage{
 	}
 	
 	public void StrToKVM (String str){
-		// TODO Auto-generated constructor stub
 		String[] splited = str.split(" ");
 		status = StatusType.values()[Integer.parseInt(splited[0])];
 		key = splited[1];

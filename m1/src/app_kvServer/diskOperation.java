@@ -68,7 +68,6 @@ public class diskOperation {
         	int key_length=get_EI_key_length(file_path,position);
         	int offset=6;
         	res=new String(myutilities.mmap_read(file_path,position+offset+key_length,read_length));
-        	
         	return res;
 	}
     
@@ -85,7 +84,6 @@ public class diskOperation {
 			lookup_table.remove(key);
 			set_EI_invalid(file_path,position);
 		}
-		
 		if(value.length() == 0)
 			return;
 		
@@ -103,7 +101,6 @@ public class diskOperation {
 		
 		new_file_size=file_size+res.length();
 		myFile.update_file_size(file_path, new_file_size);
-		
 		return;
 			
 	}
@@ -113,7 +110,6 @@ public class diskOperation {
 		lookup_table.clear();
 		//clean up file system
 		myFile.clearFile();
-		
 	}
 	
 	
@@ -175,24 +171,7 @@ public class diskOperation {
     	
     	return res;
     }
-    
-    
-    private void remove_disk(String file_path,String key) throws IOException
-    {
-    	if(!lookup_table.containsKey(key)||lookup_table.get(key)==-1)
-    	{
-    		//doesn't have entry or already removed
-    		return;
-    	}
-    	{
-    		int position=lookup_table.get(key);
-    		set_EI_invalid(file_path, position);
-    		lookup_table.put(key, -1);
-    	}
-    }
-
-
-	
+    	
 	private HashMap<String, Integer> lookup_table;	
 	private Utilities myutilities;
 	private FileSystem myFile;

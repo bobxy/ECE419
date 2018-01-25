@@ -12,7 +12,11 @@ import java.util.Set;
 import logger.LogSetup;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import Utilities.Utilities;
+import org.apache.log4j.BasicConfigurator;
+
 import common.messages.KVMessage;
+import common.messages.KVMessageC;
 import common.messages.KVMessage.StatusType;
 
 public class KVClient implements IKVClient {
@@ -25,13 +29,16 @@ public class KVClient implements IKVClient {
 	private static final String CONNECT = "connect";
 	private static final String SKIP = "skip";
 	private KVStore KVS;
-	
+	private Utilities util;
 	
     @Override
     public void newConnection(String hostname, int port) throws Exception{
+    	System.out.println("Trying to connect... Host: " + hostname + " Port: " + Integer.toString(port));
+    	util = new Utilities();
     	KVS = new KVStore(hostname, port);
+    	KVS.connect();
     	KVS.start();
-    	System.out.println(PROMPT + "New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
+    	System.out.println("New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
     	return;
     }
 
@@ -179,6 +186,11 @@ public class KVClient implements IKVClient {
     }
     
     private KVMessage put(String key, String value) throws Exception {
+    	if(util.InvaildKey(key) || value == null)
+    	{
+    		KVMessageC message = new KVMessageC(key, value, StatusType.PUT_ERROR);
+    		return message;
+    	}
     	KVMessage message = KVS.put(key, value);
     	return message;
     }
@@ -218,6 +230,7 @@ public class KVClient implements IKVClient {
     }
     
     public static void main(String[] args) throws Exception{
+    	BasicConfigurator.configure();
     	KVClient cli = new KVClient();
     	cli.run();
     }

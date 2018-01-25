@@ -83,7 +83,6 @@ public class KVServer extends Thread implements IKVServer {
     public String getKV(String key) throws Exception{
 		if(inCache(key))
 		{
-			System.out.println("found "+key+"in cache.");
 			return cache.get(key);
 		}
 		else if(inStorage(key))
@@ -97,10 +96,8 @@ public class KVServer extends Thread implements IKVServer {
 
 	@Override
     public void putKV(String key, String value) throws Exception{
-
 		DO.put(key, value);
-		if(inCache(key))
-			cache.put(key, value);
+		cache.put(key, value);
 	}
 
 	@Override
@@ -169,6 +166,7 @@ public class KVServer extends Thread implements IKVServer {
     	logger.info("Initialize server ...");
     	try {
             serverSocket = new ServerSocket(nPort);
+            nPort = serverSocket.getLocalPort();
             logger.info("Server listening on port: " 
             		+ serverSocket.getLocalPort());    
             return true;

@@ -88,5 +88,9 @@ public class Utilities {
         file.close();
 	}
 	
+	public boolean InvaildKey(String key)
+	{
+		return (key == null || key.contains(" ") || key.isEmpty() || key.length() > 20);
+	}
 
 }

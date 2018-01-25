@@ -18,6 +18,11 @@ public class LRUCache{
 		this.max_size=capacity;
 		this.allowed_size=this.max_size;
 		lru_cache = new HashMap<String, DLinkNode>();
+		head=new DLinkNode();
+		tail=new DLinkNode();
+		
+		head.next=tail;
+		tail.prev=head;
 	}
 	
 	public int get_capacity()
@@ -58,11 +63,9 @@ public class LRUCache{
             DLinkNode newNode = new DLinkNode();
             newNode.key = key;
             newNode.value = value;
-            
             this.lru_cache.put(key, newNode);
             this.addNode(newNode);
             this.allowed_size=this.allowed_size-1;
-            
             if(this.allowed_size <0){
                 DLinkNode last = this.popLast();
                 this.lru_cache.remove(last.key);
@@ -72,7 +75,7 @@ public class LRUCache{
         else{
             node.value = value;
             this.moveToHead(node);
-        }        
+        }
     }
     
     private void addNode(DLinkNode node){

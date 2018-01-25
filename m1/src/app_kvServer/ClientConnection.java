@@ -8,6 +8,7 @@ import client.TextMessage;
 import common.messages.KVMessage;
 import common.messages.KVMessage.StatusType;
 import common.messages.KVMessageC;
+import Utilities.Utilities;
 import org.apache.log4j.*;
 
 
@@ -30,6 +31,7 @@ public class ClientConnection implements Runnable {
 	private InputStream input;
 	private OutputStream output;
 	private KVServer kvs;
+	private Utilities util;
 	/**
 	 * Constructs a new CientConnection object for a given TCP socket.
 	 * @param clientSocket the Socket object for the client connection.
@@ -48,7 +50,7 @@ public class ClientConnection implements Runnable {
 		try {
 			output = clientSocket.getOutputStream();
 			input = clientSocket.getInputStream();
-		
+			util = new Utilities();
 			while(isOpen) {
 				KVMessageC message = new KVMessageC();
 				try {
@@ -59,48 +61,60 @@ public class ClientConnection implements Runnable {
 					}
 					else
 					{
-					message.StrToKVM(latestMsg.getMsg());
-					String sKey = message.getKey();
-					String sValue = "";
-					String sRet = "";
-					if(message.getStatus() == StatusType.PUT)
-					{
-						boolean bOld = kvs.inStorage(sKey);
-						boolean bDelete = (message.getValue().length() == 0);
-						if(!bOld && bDelete)
-							sRet = "8 " + sKey;
-						else
+						message.StrToKVM(latestMsg.getMsg());
+						String sKey = message.getKey();
+						String sValue = "";
+						String sRet = "";
+						if(message.getStatus() == StatusType.PUT)
 						{
-							kvs.putKV(sKey, message.getValue());
-						
-							int nStatus = -1;
-							if(bOld && bDelete)
-								nStatus = 7;
-							else if(bOld && !bDelete)
-								nStatus = 5;
+							if(util.InvaildKey(sKey))
+					    	{
+								sRet = "6 " +  sKey + " " + message.getValue();
+					    	}
 							else
-								nStatus = 4;
-							sRet = Integer.toString(nStatus) + " " + sKey + " " + message.getValue();
+							{
+								boolean bOld = kvs.inStorage(sKey);
+								boolean bDelete = (message.getValue().length() == 0);
+								if(!bOld && bDelete)
+									sRet = "8 " + sKey;
+								else
+								{
+									kvs.putKV(sKey, message.getValue());
+									int nStatus = -1;
+									if(bOld && bDelete)
+										nStatus = 7;
+									else if(bOld && !bDelete)
+										nStatus = 5;
+									else
+										nStatus = 4;
+									sRet = Integer.toString(nStatus) + " " + sKey + " " + message.getValue();
+								}
+							}
+								
 						}
-							
-					}
-					else if(message.getStatus() == StatusType.GET)
-					{
-						sValue = kvs.getKV(sKey);
-						if(sValue.length() == 0)
+						else if(message.getStatus() == StatusType.GET)
 						{
-							sRet = "1 " + sKey;
+							if(sKey == null || sKey.contains(" ") || sKey.isEmpty())
+							{
+								sRet = "1 " +  sKey;
+							}
+							else
+							{
+								sValue = kvs.getKV(sKey);
+								if(sValue.length() == 0)
+								{
+									sRet = "1 " + sKey;
+								}
+								else
+									sRet = "2 " + sKey + " " + sValue;
+							}
 						}
-						else
-							sRet = "2 " + sKey + " " + sValue;
-					}
-					
-					
-					sendMessage(new TextMessage(sRet));
-					
+						
+						
+						sendMessage(new TextMessage(sRet));
 				/* connection either terminated by the client or lost due to 
 				 * network problems*/	
-				} 
+					} 
 				}catch (IOException ioe) {
 					logger.error("Error! Connection lost!");
 					isOpen = false;
