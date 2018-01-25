@@ -14,10 +14,13 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import Utilities.Utilities;
 import org.apache.log4j.BasicConfigurator;
-
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import common.messages.KVMessage;
 import common.messages.KVMessageC;
 import common.messages.KVMessage.StatusType;
+import java.time.*;
+import org.apache.log4j.Level;
 
 public class KVClient implements IKVClient {
 	private static final String PROMPT = "Client> ";
@@ -28,17 +31,20 @@ public class KVClient implements IKVClient {
 	private static final String QUIT = "quit";
 	private static final String CONNECT = "connect";
 	private static final String SKIP = "skip";
+	private static final String TEST = "test";
+	private static final String DISCONNECT = "disconnect";
+	private static final String LOGLEVEL = "logLevel";
 	private KVStore KVS;
 	private Utilities util;
+	private Logger logger = Logger.getRootLogger();
 	
     @Override
     public void newConnection(String hostname, int port) throws Exception{
-    	System.out.println("Trying to connect... Host: " + hostname + " Port: " + Integer.toString(port));
+    	logger.info("Trying to connect... Host: " + hostname + " Port: " + Integer.toString(port));
     	util = new Utilities();
     	KVS = new KVStore(hostname, port);
-    	KVS.connect();
     	KVS.start();
-    	System.out.println("New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
+    	logger.info("New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
     	return;
     }
 
@@ -79,14 +85,25 @@ public class KVClient implements IKVClient {
     				}
     				else if(sAction.equals(CONNECT))
     					newConnection(sElements[1], Integer.parseInt(sElements[2]));
+    				else if(sAction.equals(DISCONNECT) && KVS != null)
+    				{
+    					KVS.disconnect();
+    					KVS = null;
+    				}
+    				else if(sAction.equals(LOGLEVEL))
+    					SetLogLevel(sElements[1]);
     				else if(sAction.equals(SKIP))
     					continue;
+    				else if(sAction.equals(TEST))
+    					newConnection("localhost", 6666);
     			}
     			else
     				System.out.println("Error. Type help for instructions.");
     		}
     		if(KVS != null)
     			KVS.disconnect();
+    		KVS = null;
+    		System.out.println("Quiting..");
     	}
     	catch (Exception e) {
 			System.out.println("Error!");
@@ -102,8 +119,8 @@ public class KVClient implements IKVClient {
 	    	sCommand = sCommand.trim();
 	    	String[] sElements = sCommand.split(" ");
 	    	
-	    	//help or quit
-	    	if(sCommand.equals(HELP) || sCommand.equals(QUIT))
+	    	//help, quit, disconnect
+	    	if(sCommand.equals(HELP) || sCommand.equals(QUIT) || sCommand.equals(TEST) || sCommand.equals(DISCONNECT))
 	    	{
 	    		String[] ret = {sCommand};
 	    		return ret;
@@ -158,6 +175,14 @@ public class KVClient implements IKVClient {
 	    		return ret;
 	    	}
 	    	
+	    	//logLevel
+	    	if(sAction.equals(LOGLEVEL))
+	    	{
+	    		String[] ret = {LOGLEVEL, sKey};
+	    		return ret;
+	    	}
+	    	
+	    	//connect command
 	    	if(sAction.equals(CONNECT) && sElements.length >= 3)
 	    	{
 	    		String[] ret = {sAction, sKey, sElements[2]};
@@ -201,19 +226,19 @@ public class KVClient implements IKVClient {
     		return;
     	if(code == StatusType.GET_SUCCESS)
     	{
-    		System.out.println("GET SUCCESS " + message.getKey() + ": " + message.getValue());
+    		System.out.println("GET SUCCESS. " + message.getKey() + ": " + message.getValue());
     	}
     	else if(code == StatusType.PUT_SUCCESS)
     	{
-    		System.out.println("PUT SUCCESS " + message.getKey() + ": " + message.getValue());
+    		System.out.println("PUT SUCCESS. " + message.getKey() + ": " + message.getValue());
     	}
     	else if(code == StatusType.PUT_UPDATE)
     	{
-    		System.out.println("UPDATE SUCCESS " + message.getKey() + ": " + message.getValue());
+    		System.out.println("UPDATE SUCCESS. " + message.getKey() + ": " + message.getValue());
     	}
     	else if(code == StatusType.DELETE_SUCCESS)
     	{
-    		System.out.println("DELETE SUCCESS " + message.getKey());
+    		System.out.println("DELETE SUCCESS. DELETED " + message.getKey());
     	}
     	else if(code == StatusType.GET_ERROR)
     	{
@@ -229,8 +254,22 @@ public class KVClient implements IKVClient {
     	}
     }
     
+    private void SetLogLevel(String sLevel)
+    {
+    	Level le = LogSetup.GetValidLevel(sLevel);
+    	if(le != null)
+    	{
+    		logger.info("LogLevel set to " + sLevel);
+    		logger.setLevel(le);
+    	}
+    	else
+    		logger.error("Invalid LogLevel.");
+    }
+    
     public static void main(String[] args) throws Exception{
     	BasicConfigurator.configure();
+    	
+    	new LogSetup("logs/client.log", Level.ALL);
     	KVClient cli = new KVClient();
     	cli.run();
     }

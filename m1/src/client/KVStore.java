@@ -32,7 +32,7 @@ public class KVStore extends Thread implements KVCommInterface {
 	private boolean bReceived;
 	private Utilities util;
 	
-	public KVStore(String address, int port) {
+	public KVStore(String address, int port) throws Exception {
 		// TODO Auto-generated method stub
 		addr = address;
 		portnum = port;
@@ -40,6 +40,7 @@ public class KVStore extends Thread implements KVCommInterface {
 		bReceived = false;
 		kvmsg = new KVMessageC();
 		util = new Utilities();
+		connect();
 	}
 
 	@Override
@@ -50,8 +51,7 @@ public class KVStore extends Thread implements KVCommInterface {
 		stream = new MessageStream (clientSocket.getOutputStream(),clientSocket.getInputStream());
 		addListener(listener);
 		setRunning(true);
-		logger.info("Connection established");
-		System.out.println("Connection established");
+		logger.warn("Connection established");
 	}
 
 	@Override
@@ -75,7 +75,7 @@ public class KVStore extends Thread implements KVCommInterface {
 				try {
 					TextMessage latestMsg = stream.receiveMessage();
 					for(ClientSocketListener listener : listeners) {
-						kvmsg.StrToKVM(latestMsg.getMsg());
+						kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
 						bReceived = true;
 					}
 				} catch (IOException ioe) {
@@ -134,11 +134,13 @@ public class KVStore extends Thread implements KVCommInterface {
 		//turn string into textmsg obj
 		//send it to server
 		try {
-			if(util.InvaildKey(key) || value == null )
+			if(util.InvaildKey(key))
 	    	{
 	    		KVMessageC message = new KVMessageC(key, value, StatusType.PUT_ERROR);
 	    		return message;
 	    	}
+			if(value == null)
+				value = "";
 			String msg = "3 " + key + " " + value; 
 			stream.sendMessage(new TextMessage(msg));
 		} catch (IOException e){
