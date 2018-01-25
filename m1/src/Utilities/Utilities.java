@@ -51,11 +51,10 @@ public class Utilities {
 	public static  int decode_128_value_length(String value_length)
 	{
 		int res=0;
-		System.out.print("length is:"+value_length.length());
 		for(int i=0;i<value_length.length();i++)
 		{
 			res=res*128;
-			res=res+( value_length.charAt(i)-0);
+			res=res+( value_length.charAt(i));
 		}
 		
 		return res;

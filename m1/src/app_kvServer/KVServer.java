@@ -82,7 +82,10 @@ public class KVServer extends Thread implements IKVServer {
 	@Override
     public String getKV(String key) throws Exception{
 		if(inCache(key))
+		{
+			System.out.println("found "+key+"in cache.");
 			return cache.get(key);
+		}
 		else if(inStorage(key))
 		{
 			String sVal = DO.get(key);

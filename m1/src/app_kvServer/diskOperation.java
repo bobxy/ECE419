@@ -37,20 +37,16 @@ public class diskOperation {
 	public void load_lookup_table() throws IOException
 	{
 		ArrayList<String> myfiles=myFile.get_all_file_path();
-		System.out.print("goes to here\n");
 		for(int i=0;i<myfiles.size();i++)
 		{
-			System.out.print("goes to here2\n");
 			int position=0;
 			String file_path=myfiles.get(i);
 			int total_length=0;
 			while(position<myFile.get_file_size(file_path))
 			{
-				System.out.print("my position is"+position+"\n");
 				boolean isvalid=get_EI_valid(file_path,position);
 				if(isvalid)
 				{
-					System.out.print("goes to here3\n");
 					//if valid, update lookup table
 					int key_length=get_EI_key_length(file_path,position);
 					int value_length=get_EI_value_length(file_path,position);
@@ -61,7 +57,7 @@ public class diskOperation {
 					
 					
 				}
-				position=1+total_length;
+				position=total_length+position;
 			}
 			
 		}
@@ -90,17 +86,16 @@ public class diskOperation {
 		if(lookup_table.containsKey(key))
 		{
 			//need to set invalid for old key value
-			System.out.println("set invalid");
 			int position=lookup_table.get(key);
 			set_EI_invalid(file_path,position);
 		}
 		
 		//create ei;
-		ei=ei+1; //valid =1;
+		ei=ei+(char)1; //valid =1;
 		ei=ei+(char)key.length();
 		ei=ei+Utilities.encode_128_value_length(value.length());
 		String res=ei+key+value;
-		int position=file_size+1;
+		int position=file_size;
 		//write to file
 		myutilities.mmap_write(file_path, position, res);
 		//update lookup table
@@ -142,8 +137,10 @@ public class diskOperation {
     
     private void set_EI_invalid(String file_path, int position) throws IOException
     {
-    	String invalid="0";
-    	myutilities.mmap_write(file_path, position, invalid);
+    	char invalid=0;
+    	String append="";
+    	append+=invalid;
+    	myutilities.mmap_write(file_path, position, append);
     	
     }
     

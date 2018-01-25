@@ -64,16 +64,18 @@ public class ClientConnection implements Runnable {
 						if(!bOld && bDelete)
 							sRet = "8 " + sKey;
 						else
+						{
 							kvs.putKV(sKey, message.getValue());
 						
-						int nStatus = -1;
-						if(bOld && bDelete)
-							nStatus = 7;
-						else if(bOld && !bDelete)
-							nStatus = 5;
-						else
-							nStatus = 4;
-						sRet = Integer.toString(nStatus) + " " + sKey + " " + message.getValue();
+							int nStatus = -1;
+							if(bOld && bDelete)
+								nStatus = 7;
+							else if(bOld && !bDelete)
+								nStatus = 5;
+							else
+								nStatus = 4;
+							sRet = Integer.toString(nStatus) + " " + sKey + " " + message.getValue();
+						}
 							
 					}
 					else if(message.getStatus() == StatusType.GET)
