@@ -116,11 +116,25 @@ public class KVServer extends Thread implements IKVServer {
 	@Override
     public void kill(){
 		// TODO Auto-generated method stub
+		running = false;
+        try {
+			serverSocket.close();
+		} catch (IOException e) {
+			logger.error("Error! " +
+					"Unable to close socket on port: " + nPort, e);
+		}
 	}
 
 	@Override
     public void close(){
 		// TODO Auto-generated method stub
+		running = false;
+        try {
+			serverSocket.close();
+		} catch (IOException e) {
+			logger.error("Error! " +
+					"Unable to close socket on port: " + nPort, e);
+		}
 	}
 	
 	public void run() {
@@ -179,7 +193,7 @@ public class KVServer extends Thread implements IKVServer {
 				int cachesize = Integer.parseInt(args[1]);
 				String strategy = args[2];
 				
-				new KVServer(port, cachesize, strategy).run();
+				new KVServer(port, cachesize, strategy).start();
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
