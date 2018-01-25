@@ -172,7 +172,6 @@ public class diskOperation {
     	int value_offset=2;
     	
     	value=new String(myutilities.mmap_read(file_path,position+value_offset,read_length));
-    	
     	res=Utilities.decode_128_value_length(value);
     	
     	return res;
