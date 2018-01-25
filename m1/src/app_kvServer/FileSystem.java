@@ -74,9 +74,16 @@ public class FileSystem {
 			if(file.exists())
 			{
 				file.delete();
+				
 			}
+			if(!file.exists())
+				try {
+					file.createNewFile();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 		}
-		file_num_path.clear();
 	}
 	private HashMap<String, Integer> file_file_size;
 
