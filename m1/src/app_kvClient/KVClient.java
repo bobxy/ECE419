@@ -30,7 +30,7 @@ public class KVClient implements IKVClient {
     @Override
     public void newConnection(String hostname, int port) throws Exception{
     	KVS = new KVStore(hostname, port);
-    	KVS.connect();
+    //	KVS.connect();
     	KVS.start();
     	System.out.println(PROMPT + "New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
     	return;

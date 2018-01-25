@@ -32,8 +32,8 @@ public class KVServer extends Thread implements IKVServer {
 	private Cache cache;
 	private diskOperation DO;
 	
-	public KVServer(int port, int cacheSize, String strategy, String hostname) throws IOException {
-		sHostname = hostname;
+	public KVServer(int port, int cacheSize, String strategy) throws IOException {
+		sHostname = "localhost";
 		nPort = port;
 		nCacheSize = cacheSize;
 		DO = new diskOperation();
@@ -171,16 +171,15 @@ public class KVServer extends Thread implements IKVServer {
     public static void main(String[] args) {
     	try {
 			new LogSetup("logs/server.log", Level.ALL);
-			if(args.length != 4) {
+			if(args.length != 3) {
 				System.out.println("Error! Invalid number of arguments!");
-				System.out.println("Usage: Server <hostname> <port> <cache_size> <cache_strategy>!");
+				System.out.println("Usage: Server <port> <cache_size> <cache_strategy>!");
 			} else {
-				String hostname = args[3];
 				int port = Integer.parseInt(args[0]);
 				int cachesize = Integer.parseInt(args[1]);
 				String strategy = args[2];
 				
-				new KVServer(port, cachesize, strategy, hostname).start();
+				new KVServer(port, cachesize, strategy).start();
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
