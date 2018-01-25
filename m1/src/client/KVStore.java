@@ -66,6 +66,8 @@ public class KVStore extends Thread implements KVCommInterface {
 	
 	public void run() {
 		try {
+			
+			connect();
 			stream = new MessageStream (clientSocket.getOutputStream(),clientSocket.getInputStream());
 			
 			while(isRunning()) {
@@ -93,7 +95,8 @@ public class KVStore extends Thread implements KVCommInterface {
 		} catch (IOException ioe) {
 			logger.error("Connection could not be established!");
 			
-		} finally {
+		} catch (Exception e){}
+		finally {
 			if(isRunning()) {
 				disconnect();
 			}
