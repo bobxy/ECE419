@@ -167,10 +167,10 @@ public class KVClient implements IKVClient {
     
     private void help(){
     	System.out.println("Please follow the following foramts for the instructions");
-    	System.out.println(PUT + " key" + " \"value\"");
-    	System.out.println(GET + " key");
-    	System.out.println(DELETE + " key");
-    	System.out.println(CONNECT + " host" + " port");
+    	System.out.println(PUT + " <key>" + " \"<value>\"");
+    	System.out.println(GET + " <key>");
+    	System.out.println(DELETE + " <key>");
+    	System.out.println(CONNECT + " <host>" + " <port>");
     	System.out.println(QUIT);
     }
     
