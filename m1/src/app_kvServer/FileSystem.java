@@ -79,6 +79,7 @@ public class FileSystem {
 			if(!file.exists())
 				try {
 					file.createNewFile();
+					file_file_size.put(file_num_path.get(i), (int)file.length());
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
