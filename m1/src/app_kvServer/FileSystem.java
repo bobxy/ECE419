@@ -34,7 +34,7 @@ public class FileSystem {
 	
 	public void insert_file(String file_path)
 	{
-		file_num_path.add(file_path);
+		
 		File file =new File(file_path);
 		if(!file.exists())
 			try {
@@ -43,7 +43,8 @@ public class FileSystem {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		file_file_size.put(file_path, (int) file.length());
+		file_num_path.add(file.getAbsolutePath());
+		file_file_size.put(file.getAbsolutePath(), (int) file.length());
 	}
 	public String get_file_path(String key)
 	{
