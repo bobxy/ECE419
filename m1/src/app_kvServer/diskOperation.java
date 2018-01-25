@@ -45,18 +45,13 @@ public class diskOperation {
 			while(position<myFile.get_file_size(file_path))
 			{
 				boolean isvalid=get_EI_valid(file_path,position);
+				int key_length=get_EI_key_length(file_path,position);
+				int value_length=get_EI_value_length(file_path,position);
+				total_length=0;
+				total_length=6+key_length+value_length;
+				String key=get_key(file_path,position,key_length);
 				if(isvalid)
-				{
-					//if valid, update lookup table
-					int key_length=get_EI_key_length(file_path,position);
-					int value_length=get_EI_value_length(file_path,position);
-					total_length=0;
-					total_length=6+key_length+value_length;
-					String key=get_key(file_path,position,key_length);
 					lookup_table.put(key, position);
-					
-					
-				}
 				position=total_length+position;
 			}
 			
@@ -87,8 +82,12 @@ public class diskOperation {
 		{
 			//need to set invalid for old key value
 			int position=lookup_table.get(key);
+			lookup_table.remove(key);
 			set_EI_invalid(file_path,position);
 		}
+		
+		if(value.length() == 0)
+			return;
 		
 		//create ei;
 		ei=ei+(char)1; //valid =1;

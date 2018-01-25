@@ -179,7 +179,7 @@ public class KVServer extends Thread implements IKVServer {
 				int cachesize = Integer.parseInt(args[1]);
 				String strategy = args[2];
 				
-				new KVServer(port, cachesize, strategy).start();
+				new KVServer(port, cachesize, strategy).run();
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
