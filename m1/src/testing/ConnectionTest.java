@@ -10,14 +10,13 @@ import junit.framework.TestCase;
 public class ConnectionTest extends TestCase {
 
 	
-	public void testConnectionSuccess() throws Exception {
+	public void testConnectionSuccess() {
 		
 		Exception ex = null;
-
-	
+		
+		KVStore kvClient = new KVStore("localhost", 50000);
 		try {
-			KVStore kvClient = new KVStore("localhost", 50000);
-			//kvClient.connect();
+			kvClient.connect();
 		} catch (Exception e) {
 			ex = e;
 		}	
@@ -26,13 +25,12 @@ public class ConnectionTest extends TestCase {
 	}
 	
 	
-	public void testUnknownHost() throws Exception {
+	public void testUnknownHost() {
 		Exception ex = null;
-		//KVStore kvClient = new KVStore("unknown", 50000);
+		KVStore kvClient = new KVStore("unknown", 50000);
 		
 		try {
-			KVStore kvClient = new KVStore("unknown", 50000);
-			//kvClient.connect();
+			kvClient.connect();
 		} catch (Exception e) {
 			ex = e; 
 		}
@@ -41,13 +39,12 @@ public class ConnectionTest extends TestCase {
 	}
 	
 	
-	public void testIllegalPort() throws Exception {
+	public void testIllegalPort() {
 		Exception ex = null;
-		//KVStore kvClient = new KVStore("localhost", 123456789);
+		KVStore kvClient = new KVStore("localhost", 123456789);
 		
 		try {
-			KVStore kvClient = new KVStore("localhost", 123456789);
-			//kvClient.connect();
+			kvClient.connect();
 		} catch (Exception e) {
 			ex = e; 
 		}
