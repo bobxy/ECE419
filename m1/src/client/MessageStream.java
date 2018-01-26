@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.log4j.Logger;
+
 public class MessageStream {
 	
 	private OutputStream output;
  	private InputStream input;
+ 	private Logger logger = Logger.getRootLogger();
 	
 	private static final int BUFFER_SIZE = 1024;
 	private static final int DROP_SIZE = 1024 * BUFFER_SIZE;
@@ -29,7 +32,7 @@ public class MessageStream {
 		byte[] msgBytes = msg.getMsgBytes();
 		output.write(msgBytes, 0, msgBytes.length);
 		output.flush();
-		//logger.info("Send message:\t '" + msg.getMsg() + "'");
+		logger.info("Send message:\t '" + msg.getMsg() + "'");
     }
 	
 	
@@ -89,7 +92,7 @@ public class MessageStream {
 		
 		/* build final String */
 		TextMessage msg = new TextMessage(msgBytes);
-		//logger.info("Receive message:\t '" + msg.getMsg() + "'");
+		logger.info("Receive message:\t '" + msg.getMsg() + "'");
 		return msg;
     }
  	
