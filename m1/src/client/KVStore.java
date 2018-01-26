@@ -51,7 +51,7 @@ public class KVStore extends Thread implements KVCommInterface {
 		stream = new MessageStream (clientSocket.getOutputStream(),clientSocket.getInputStream());
 		addListener(listener);
 		setRunning(true);
-		logger.warn("Connection established");
+		logger.info("Connection established");
 	}
 
 	@Override

@@ -63,23 +63,25 @@ public class ClientConnection implements Runnable {
 					{
 						message.StrToKVM(latestMsg.getMsg());
 						String sKey = message.getKey();
-						String sValue = "";
+						String sValue = message.getValue();
+						if(sValue.equals("null"))
+							sValue = "";
 						String sRet = "";
 						if(message.getStatus() == StatusType.PUT)
 						{
 							if(util.InvaildKey(sKey))
 					    	{
-								sRet = "6 " +  sKey + " " + message.getValue();
+								sRet = "6 " +  sKey + " " + sValue;
 					    	}
 							else
 							{
 								boolean bOld = kvs.inStorage(sKey);
-								boolean bDelete = (message.getValue().length() == 0);
+								boolean bDelete = (sValue.length() == 0);
 								if(!bOld && bDelete)
 									sRet = "8 " + sKey;
 								else
 								{
-									kvs.putKV(sKey, message.getValue());
+									kvs.putKV(sKey, sValue);
 									int nStatus = -1;
 									if(bOld && bDelete)
 										nStatus = 7;
@@ -87,7 +89,7 @@ public class ClientConnection implements Runnable {
 										nStatus = 5;
 									else
 										nStatus = 4;
-									sRet = Integer.toString(nStatus) + " " + sKey + " " + message.getValue();
+									sRet = Integer.toString(nStatus) + " " + sKey + " " + sValue;
 								}
 							}
 								
