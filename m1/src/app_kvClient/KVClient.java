@@ -119,7 +119,7 @@ public class KVClient implements IKVClient {
     	{
 	    	sCommand = sCommand.trim();
 	    	String[] sElements = sCommand.split(" ");
-	    	
+	    	int nElementCount = sElements.length;
 	    	//help, quit, disconnect
 	    	if(sCommand.equals(HELP) || sCommand.equals(QUIT) || sCommand.equals(TEST) || sCommand.equals(DISCONNECT))
 	    	{
@@ -128,21 +128,21 @@ public class KVClient implements IKVClient {
 	    	}
 	    	
 	    	//Error
-	    	if(sElements.length < 2)
+	    	if(nElementCount < 2)
 	    		return null;
 	    	
 	    	String sAction = sElements[0];
 	    	String sKey = sElements[1];
 	    	
 	    	//get command
-	    	if(sAction.equals(GET))
+	    	if(sAction.equals(GET) && nElementCount == 2)
 	    	{
 	    		String[] ret = {sAction, sKey};
 	    		return ret;
 	    	}
 	    	
 	    	//put command
-	    	if(sAction.equals(PUT))
+	    	if(sAction.equals(PUT) && nElementCount ==3)
 	    	{
 	    		//error
 	    		if(sElements.length < 3)
@@ -170,21 +170,21 @@ public class KVClient implements IKVClient {
 	    	}
 	    	
 	    	//delete command
-	    	if(sAction.equals(DELETE))
+	    	if(sAction.equals(DELETE) && nElementCount ==2)
 	    	{
 	    		String[] ret = {PUT, sKey, ""};
 	    		return ret;
 	    	}
 	    	
 	    	//logLevel
-	    	if(sAction.equals(LOGLEVEL))
+	    	if(sAction.equals(LOGLEVEL) && nElementCount == 2)
 	    	{
 	    		String[] ret = {LOGLEVEL, sKey};
 	    		return ret;
 	    	}
 	    	
 	    	//connect command
-	    	if(sAction.equals(CONNECT) && sElements.length >= 3)
+	    	if(sAction.equals(CONNECT) && nElementCount == 3)
 	    	{
 	    		String[] ret = {sAction, sKey, sElements[2]};
 	    		return ret;
