@@ -96,17 +96,13 @@ public class ClientConnection implements Runnable {
 						}
 						else if(message.getStatus() == StatusType.GET)
 						{
-							if(sKey == null || sKey.contains(" ") || sKey.isEmpty())
-							{
+							if(util.InvaildKey(sKey))
 								sRet = "1 " +  sKey;
-							}
 							else
 							{
 								sValue = kvs.getKV(sKey);
 								if(sValue.length() == 0)
-								{
 									sRet = "1 " + sKey;
-								}
 								else
 									sRet = "2 " + sKey + " " + sValue;
 							}

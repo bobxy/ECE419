@@ -32,7 +32,7 @@ public class KVStore extends Thread implements KVCommInterface {
 	private boolean bReceived;
 	private Utilities util;
 	
-	public KVStore(String address, int port) throws Exception {
+	public KVStore(String address, int port) {
 		// TODO Auto-generated method stub
 		addr = address;
 		portnum = port;
@@ -40,7 +40,6 @@ public class KVStore extends Thread implements KVCommInterface {
 		bReceived = false;
 		kvmsg = new KVMessageC();
 		util = new Utilities();
-		connect();
 	}
 
 	@Override
@@ -52,6 +51,7 @@ public class KVStore extends Thread implements KVCommInterface {
 		addListener(listener);
 		setRunning(true);
 		logger.info("Connection established");
+		start();
 	}
 
 	@Override
@@ -144,7 +144,7 @@ public class KVStore extends Thread implements KVCommInterface {
 			String msg = "3 " + key + " " + value; 
 			stream.sendMessage(new TextMessage(msg));
 		} catch (IOException e){
-			System.out.println("Client> " + "Error! " +  "Unable to send message!");
+			logger.error("Client> " + "Error! " +  "Unable to send message!");
 			disconnect();
 		}
 		
@@ -168,7 +168,7 @@ public class KVStore extends Thread implements KVCommInterface {
 			String msg = "0 " + key;
 			stream.sendMessage(new TextMessage(msg));
 		} catch (IOException e){
-			System.out.println("Client> " + "Error! " +  "Unable to send message!");
+			logger.error("Client> " + "Error! " +  "Unable to send message!");
 			disconnect();
 		}
 		while(true)

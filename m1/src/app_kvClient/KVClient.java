@@ -43,7 +43,8 @@ public class KVClient implements IKVClient {
     	logger.info("Trying to connect... Host: " + hostname + " Port: " + Integer.toString(port));
     	util = new Utilities();
     	KVS = new KVStore(hostname, port);
-    	KVS.start();
+    	KVS.connect();
+    	//KVS.start();
     	logger.info("New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
     	return;
     }
@@ -189,7 +190,7 @@ public class KVClient implements IKVClient {
 	    		return ret;
 	    	}
     	}catch(Exception e) {
-			System.out.println("Error!");
+			System.out.println("Error when parsing command!");
 			e.printStackTrace();
 			System.exit(1);
     	}
@@ -202,6 +203,8 @@ public class KVClient implements IKVClient {
     	System.out.println(GET + " <key>");
     	System.out.println(DELETE + " <key>");
     	System.out.println(CONNECT + " <host>" + " <port>");
+    	System.out.println(DISCONNECT);
+    	System.out.println(LOGLEVEL + " <level> (one of " + LogSetup.getPossibleLogLevels() + " )");
     	System.out.println(QUIT);
     }
     
@@ -268,7 +271,6 @@ public class KVClient implements IKVClient {
     
     public static void main(String[] args) throws Exception{
     	BasicConfigurator.configure();
-    	
     	new LogSetup("logs/client.log", Level.ALL);
     	KVClient cli = new KVClient();
     	cli.run();
