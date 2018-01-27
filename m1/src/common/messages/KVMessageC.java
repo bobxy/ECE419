@@ -36,7 +36,7 @@ public class KVMessageC implements KVMessage{
 		status = StatusType.values()[Integer.parseInt(splited[0])];
 		key = splited[1];
 		int nKeyLength = key.length();
-		if(3 + nKeyLength >= str.length())
+		if(3 + nKeyLength >= str.length())														//e.g 0 key value 
 			value = "";
 		else
 			value = str.substring(3 + nKeyLength);
