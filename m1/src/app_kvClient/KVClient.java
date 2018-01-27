@@ -142,11 +142,18 @@ public class KVClient implements IKVClient {
 	    	}
 	    	
 	    	//put command
-	    	if(sAction.equals(PUT) && nElementCount ==3)
+	    	if(sAction.equals(PUT))
 	    	{
 	    		//error
-	    		if(sElements.length < 3)
+	    		if(nElementCount < 3)
 	    			return null;
+	    		
+	    		if(nElementCount > 3 && !sElements[2].startsWith("\""))
+	    		{
+	    			String[] ret = {SKIP};
+	    			System.out.println("Error. A key cannot contain any space.");
+	    			return ret;
+	    		}
 	    		
 	    		int nValueStart = sCommand.indexOf("\"") + 1;
 	    		int nValueEnd = sCommand.indexOf("\"", nValueStart);
@@ -164,7 +171,7 @@ public class KVClient implements IKVClient {
 	    		else
 	    		{
 	    			String[] ret = {SKIP};
-	    			System.out.println("Value cannot be empty. To delete, please use \"delete\" command.");
+	    			System.out.println("Error. Value cannot be empty. To delete, please use \"delete\" command or put null as the value.");
 	    			return ret;
 	    		}
 	    	}
@@ -204,7 +211,7 @@ public class KVClient implements IKVClient {
     	System.out.println(DELETE + " <key>");
     	System.out.println(CONNECT + " <host>" + " <port>");
     	System.out.println(DISCONNECT);
-    	System.out.println(LOGLEVEL + " <level> (one of " + LogSetup.getPossibleLogLevels() + " )");
+    	System.out.println(LOGLEVEL + " <level> (one of " + LogSetup.getPossibleLogLevels() + ")");
     	System.out.println(QUIT);
     }
     
@@ -266,7 +273,7 @@ public class KVClient implements IKVClient {
     		logger.setLevel(le);
     	}
     	else
-    		logger.error("Invalid LogLevel.");
+    		System.out.println("Invalid LogLevel.");
     }
     
     public static void main(String[] args) throws Exception{
