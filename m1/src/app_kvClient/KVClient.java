@@ -163,7 +163,8 @@ public class KVClient implements IKVClient {
 	    			return null;
 	    		
 	    		String sValue = sCommand.substring(nValueStart, nValueEnd);
-	    		if(sValue.length() > 0)
+	    		int nValueLength = sValue.length();
+	    		if(nValueLength > 0 && nValueLength <= 120000)
 	    		{
 	    			String[] ret = {sAction, sKey, sValue};
 	    			return ret;
@@ -171,7 +172,7 @@ public class KVClient implements IKVClient {
 	    		else
 	    		{
 	    			String[] ret = {SKIP};
-	    			System.out.println("Error. Value cannot be empty. To delete, please use \"delete\" command or put null as the value.");
+	    			System.out.println("Error. Value cannot be empty or exceed 120,000 charaters. To delete, please use \"delete\" command or put null as the value.");
 	    			return ret;
 	    		}
 	    	}
