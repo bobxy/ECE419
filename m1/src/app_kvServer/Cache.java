@@ -12,17 +12,11 @@ public class Cache {
 		lru = null;
 		lfu = null;
 		if(CacheStrategy == IKVServer.CacheStrategy.FIFO)
-		{
 			fifo = new FIFOCache(cacheSize);
-		}
 		else if(CacheStrategy == IKVServer.CacheStrategy.LRU)
-		{
 			lru = new LRUCache(cacheSize);
-		}
 		else if(CacheStrategy == IKVServer.CacheStrategy.LFU)
-		{
 			lfu = new LFUCache(cacheSize);
-		}
 		
 	}
 	

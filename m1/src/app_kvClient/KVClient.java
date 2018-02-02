@@ -156,7 +156,7 @@ public class KVClient implements IKVClient {
 	    		}
 	    		
 	    		int nValueStart = sCommand.indexOf("\"") + 1;
-	    		int nValueEnd = sCommand.indexOf("\"", nValueStart);
+	    		int nValueEnd = sCommand.lastIndexOf("\"");
 	    		int nCommandLength = sCommand.length();
 	    		
 	    		if(nValueStart >= nCommandLength || nValueEnd != nCommandLength - 1)
