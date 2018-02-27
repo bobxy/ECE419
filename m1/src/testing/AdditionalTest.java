@@ -243,7 +243,7 @@ public class AdditionalTest extends TestCase {
 
 	}
 	
-/*	@Test
+	@Test
 	public void testPutKeyWithSpaces (){
 		String key = "to ny";
 		String value = "tPKWS";
@@ -258,7 +258,7 @@ public class AdditionalTest extends TestCase {
 		
 		assertTrue(ex == null && response.getStatus() == StatusType.PUT_ERROR);
 		
-	}*/
+	}
 	
 	public void testMultipleClientConnections() {
 		
