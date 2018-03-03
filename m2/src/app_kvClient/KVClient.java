@@ -16,9 +16,9 @@ import Utilities.Utilities;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import common.messages.KVMessage;
-import common.messages.KVMessageC;
-import common.messages.KVMessage.StatusType;
+import common.KVMessage;
+import common.KVMessageC;
+import common.KVMessage.StatusType;
 import java.time.*;
 import org.apache.log4j.Level;
 

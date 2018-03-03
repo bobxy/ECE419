@@ -1,7 +1,8 @@
-package common.messages;
+package common;
 
-import common.messages.KVMessage;
-import common.messages.KVMessage.StatusType;
+import common.KVMessage;
+import common.KVMessage.StatusType;
+import ecs.IECSNode;
 
 public class KVMessageC implements KVMessage{
 	
@@ -45,4 +46,9 @@ public class KVMessageC implements KVMessage{
 			value = str.substring(3 + nKeyLength);
 	}
 
+	@Override
+	public IECSNode getResponsibleServer()
+	{
+		return null;
+	}
 }
