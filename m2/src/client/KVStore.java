@@ -9,9 +9,9 @@ import org.apache.log4j.Logger;
 
 import client.ClientSocketListenerInterface.SocketStatus;
 
-import common.messages.KVMessage;
-import common.messages.KVMessageC;
-import common.messages.KVMessage.StatusType;
+import common.KVMessage;
+import common.KVMessageC;
+import common.KVMessage.StatusType;
 
 public class KVStore implements KVCommInterface {
 	/**
