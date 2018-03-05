@@ -215,29 +215,52 @@ public class KVServer implements IKVServer {
 		}
     }
 
+    @Override
+    public void initKVServer(String metadata,int cacheSize, String replacementStrategy){
+    	//Initialize the KVServer with the metadata, it's local cache size, and the cache replacement strategy,
+    	//and block it for client requests, i.e., all client requests are rejected with an SERVER_STOPPED error message;
+    	//ECS requests have to be processed.
+    	
+    }
 	@Override
 	public void start() {
 		// TODO
+		//Starts the KVServer, all client requests and all ECS requests are processed.
 	}
 
     @Override
     public void stop() {
 		// TODO
+    	//Stops the KVServer, all client requests are rejected and only ECS requests are processed.
 	}
 
     @Override
+    public void shutDown() {
+    	//Exits the KVServer application.
+    }
+    @Override
     public void lockWrite() {
 		// TODO
+    	//Lock the KVServer for write operations.
 	}
 
     @Override
     public void unlockWrite() {
 		// TODO
+    	//Unlock the KVServer for write operations.
 	}
 
     @Override
     public boolean moveData(String[] hashRange, String targetName) throws Exception {
 		// TODO
+    	//Transfer a subset (range) of the KVServer's data to another KVServer 
+    	//(reallocation before removing this server or adding a new KVServer to the ring); 
+    	//send a notification to the ECS, if data transfer is completed.
 		return false;
 	}
+    
+    @Override
+    public void update(String metadata) {
+    	
+    }
 }

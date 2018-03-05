@@ -111,4 +111,10 @@ public interface IKVServer {
      * ECS-related moveData, move the given hashRange to the server going by the targetName
      */
     public boolean moveData(String[] hashRange, String targetName) throws Exception;
+
+	public void initKVServer(String metadata,int cacheSize, String replacementStrategy);
+
+	public void shutDown();
+
+	public void update(String metadata);
 }
