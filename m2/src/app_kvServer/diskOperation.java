@@ -3,6 +3,8 @@ package app_kvServer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import Utilities.Utilities;
 
@@ -15,6 +17,7 @@ public class diskOperation {
 		lookup_table = new HashMap<String, Integer>();
 		myFile = new FileSystem();
 		myFile.insert_file("test.file");
+		range_lookup=new TreeSet();
 	}
 	
 	public boolean inStorage(String key)
@@ -51,7 +54,10 @@ public class diskOperation {
 				total_length=6+key_length+value_length;
 				String key=get_key(file_path,position,key_length);
 				if(isvalid)
+				{
 					lookup_table.put(key, position);
+					range_lookup.add(key);
+				}
 				position=total_length+position;
 			}
 			
@@ -85,7 +91,10 @@ public class diskOperation {
 			set_EI_invalid(file_path,position);
 		}
 		if(value.length() == 0)
+		{
+			range_lookup.remove(key);
 			return;
+		}
 		
 		//create ei;
 		ei=ei+(char)1; //valid =1;
@@ -110,6 +119,7 @@ public class diskOperation {
 		lookup_table.clear();
 		//clean up file system
 		myFile.clearFile();
+		range_lookup.clear();
 	}
 	
 	
@@ -171,9 +181,15 @@ public class diskOperation {
     	
     	return res;
     }
-    	
+    
+    public SortedSet<String> ReturnSubRange(String first,String last)
+    {
+    	SortedSet<String>res=range_lookup.subSet(first, last);
+    	return res;
+    }
 	private HashMap<String, Integer> lookup_table;	
 	private Utilities myutilities;
 	private FileSystem myFile;
+	private SortedSet<String> range_lookup;
 
 }
