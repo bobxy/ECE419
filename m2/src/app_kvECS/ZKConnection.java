@@ -37,7 +37,9 @@ public class ZKConnection {
 	      }
 	   });
 			
+	   System.out.println("14");
 	   connectedSignal.await();
+	   System.out.println("15");
 	   return zk;
 	}
 
