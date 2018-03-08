@@ -154,11 +154,13 @@ public class KVStore extends Thread implements KVCommInterface {
 						StatusType.PUT_ERROR);
 				return message;
 			}
-			reconnect(key);
-			if (value == null)
-				value = "";
-			String msg = "3 " + key + " " + value;
-			stream.sendMessage(new TextMessage(msg));
+			if(reconnect(key))
+			{
+				if (value == null)
+					value = "";
+				String msg = "3 " + key + " " + value;
+				stream.sendMessage(new TextMessage(msg));
+			}
 		} catch (IOException e) {
 			logger.error("Client> " + "Error! " + "Unable to send message!");
 			disconnect();
@@ -206,9 +208,11 @@ public class KVStore extends Thread implements KVCommInterface {
 	public KVMessage get(String key) throws Exception {
 		// TODO Auto-generated method stub
 		try {
-			reconnect(key);
-			String msg = "0 " + key;
-			stream.sendMessage(new TextMessage(msg));
+			if(reconnect(key))
+			{
+				String msg = "0 " + key;
+				stream.sendMessage(new TextMessage(msg));
+			}
 		} catch (IOException e) {
 			logger.error("Client> " + "Error! " + "Unable to send message!");
 			disconnect();
@@ -278,16 +282,26 @@ public class KVStore extends Thread implements KVCommInterface {
 		return sc.IsEmpty();
 	}
 	
-	private void reconnect(String sKey) throws Exception
+	private boolean reconnect(String sKey) throws Exception
 	{
 		ServerConfiguration config = sc.FindServerForKey(sKey);
-		int nNewPort = config.GetPort();
-		String sNewAddress = config.GetAddress();
-		if(nNewPort != portnum || !addr.equals(sNewAddress))
+		if(config != null)
 		{
-			addr = sNewAddress;
-			portnum = nNewPort;
-			connect();
+			int nNewPort = config.GetPort();
+			String sNewAddress = config.GetAddress();
+			if(nNewPort != portnum || !addr.equals(sNewAddress))
+			{
+				disconnect();
+				addr = sNewAddress;
+				portnum = nNewPort;
+				connect();
+			}
+			return true;
+		}
+		else
+		{
+			logger.error("Client> " + "Error! " + "Unable to find the responsible server!");
+			return false;
 		}
 	}
 }
