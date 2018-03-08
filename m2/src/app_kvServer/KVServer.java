@@ -276,8 +276,8 @@ public class KVServer implements IKVServer {
     }
     
     @Override
-    public void putKVonly(String key,String value)
+    public void putKVonly(String key,String value) throws IOException
     {
-    	DO.put(key, value);
+    	DO.put(key,value);
     }
 }
