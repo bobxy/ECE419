@@ -13,7 +13,7 @@ import common.KVMessage;
 import common.KVMessageC;
 import common.KVMessage.StatusType;
 
-public class KVStore implements KVCommInterface {
+public class KVStore extends Thread implements KVCommInterface {
 	/**
 	 * Initialize KVStore with address and port of KVServer
 	 * 
