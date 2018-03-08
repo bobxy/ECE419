@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -35,14 +37,16 @@ public class KVServer implements IKVServer {
 	private diskOperation DO;
 	private String sZKHostname;
 	private int nZKPort;
-	private KVStore KVS;
+	private KVStore ServerKVStore;
 	private HashMap metadataMap;
 	private ReentrantLock ServerLock;
+	private boolean HandleClientRequest;
 	public KVServer(String name, String zkHostname, int zkPort) {
 		sHostname = name;
 		sZKHostname = zkHostname;
 		nZKPort = zkPort;
 		ServerLock=new ReentrantLock();
+		HandleClientRequest=false;
     	//tcp connection to zookeeper
     	//get metadata from zk
 		//parse metadata
@@ -175,17 +179,8 @@ public class KVServer implements IKVServer {
     	//Initialize the KVServer with the metadata, it's local cache size, and the cache replacement strategy,
     	//and block it for client requests, i.e., all client requests are rejected with an SERVER_STOPPED error message;
     	//ECS requests have to be processed.
-		DO = new diskOperation();
-		DO.load_lookup_table();
-		if(replacementStrategy.equals("FIFO"))
-			CacheStrategy = IKVServer.CacheStrategy.FIFO;
-		else if(replacementStrategy.equals("LRU"))
-			CacheStrategy = IKVServer.CacheStrategy.LRU;
-		else if(replacementStrategy.equals("LFU"))
-			CacheStrategy = IKVServer.CacheStrategy.LFU;
-		else
-			CacheStrategy = IKVServer.CacheStrategy.None;
-		cache = new Cache(CacheStrategy, cacheSize);
+    	boolean res=true;
+    	return res;
 
     	
     }
@@ -193,27 +188,7 @@ public class KVServer implements IKVServer {
 	public void start() {
 		// TODO
 		//Starts the KVServer, all client requests and all ECS requests are processed.
-
-    	running = initKVServer(metadataMap,nCacheSize,CacheStrategy);
-        
-        if(serverSocket != null) {
-	        while(isRunning()){
-	            try {
-	                Socket client = serverSocket.accept();                
-	                ClientConnection connection = 
-	                		new ClientConnection(client, this);
-	                new Thread(connection).start();
-	                
-	                logger.info("Connected to " 
-	                		+ client.getInetAddress().getHostName() 
-	                		+  " on port " + client.getPort());  
-	            } catch (IOException e) {
-	            	logger.error("Error! " +
-	            			"Unable to establish connection. \n", e);
-	            }
-	        }
-        }
-        logger.info("Server stopped.");
+		HandleClientRequest=true;
 
 	}
 
@@ -221,13 +196,7 @@ public class KVServer implements IKVServer {
     public void stop() {
 		// TODO
     	//Stops the KVServer, all client requests are rejected and only ECS requests are processed.
-		running = false;
-        try {
-			serverSocket.close();
-		} catch (IOException e) {
-			logger.error("Error! " +
-					"Unable to close socket on port: " + nPort, e);
-		}
+    	HandleClientRequest=false;
 	}
 
     @Override
@@ -258,13 +227,21 @@ public class KVServer implements IKVServer {
     	//send a notification to the ECS, if data transfer is completed.
 		//create KVStore object here to take connections from client
     	//use targetName to find appropriate address, port
-    	String TargetHostname;
-    	int TargetPort;
-		KVS = new KVStore(TargetHostname, TargetPort);
-		KVS.connect();
-		//determine which key value pairs need to move.
-		//use kv message to send all the pairs to target
-		ValidateReturnedMessage(put(key, value));
+    	String TargetHostname="";
+    	int TargetPort=0;
+    	ServerKVStore = new KVStore(TargetHostname,TargetPort);
+    	// find all key value pairs fall into this range
+    	String lowerbound=hashRange[0];
+    	String upperbound=hashRange[1];
+    	ArrayList<KeyValuePair> ListToMove=DO.get_subset(lowerbound, upperbound);
+    	
+    	for(KeyValuePair currentPair:ListToMove)
+    	{
+    		ServerKVStore.putNoCache(currentPair.getKey(), currentPair.getValue());
+    	}
+    	
+    	ListToMove.clear();
+    	
 		return false;
 	}
     
@@ -276,7 +253,7 @@ public class KVServer implements IKVServer {
     }
     
     @Override
-    public void putKVonly(String key,String value) throws IOException
+    public void putNoCache(String key,String value) throws IOException, NoSuchAlgorithmException
     {
     	DO.put(key,value);
     }

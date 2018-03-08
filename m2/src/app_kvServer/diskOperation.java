@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.SortedSet;
@@ -17,7 +18,8 @@ public class diskOperation {
 		lookup_table = new HashMap<String, Integer>();
 		myFile = new FileSystem();
 		myFile.insert_file("test.file");
-		range_lookup=new TreeSet();
+		MD5Set = new TreeSet<>();
+		HashKey=new HashMap<String,String>();
 	}
 	
 	public boolean inStorage(String key)
@@ -37,7 +39,7 @@ public class diskOperation {
 		myFile.insert_new_file(file_path);
 	}
 	
-	public void load_lookup_table() throws IOException
+	public void load_lookup_table() throws IOException, NoSuchAlgorithmException
 	{
 		ArrayList<String> myfiles=myFile.get_all_file_path();
 		for(int i=0;i<myfiles.size();i++)
@@ -55,8 +57,13 @@ public class diskOperation {
 				String key=get_key(file_path,position,key_length);
 				if(isvalid)
 				{
+					//update in lookup table
 					lookup_table.put(key, position);
-					range_lookup.add(key);
+					//first compute the md5 hash for the key
+					String MD5Hash=myutilities.cHash(key);
+					//update in MD5 sorted set
+					MD5Set.add(MD5Hash);
+					HashKey.put(MD5Hash, key);
 				}
 				position=total_length+position;
 			}
@@ -77,7 +84,7 @@ public class diskOperation {
         	return res;
 	}
     
-	public void put(String key, String value) throws IOException{
+	public void put(String key, String value) throws IOException, NoSuchAlgorithmException{
 		String file_path=myFile.get_file_path(key);
 		int file_size=myFile.get_file_size(file_path);
 		//append to the end of file
@@ -89,10 +96,14 @@ public class diskOperation {
 			int position=lookup_table.get(key);
 			lookup_table.remove(key);
 			set_EI_invalid(file_path,position);
+			//remove from HashKey,KeyHash maps
+			String tempMD5=myutilities.cHash(key);
+
+			MD5Set.remove(tempMD5);
+			HashKey.remove(tempMD5);
 		}
 		if(value.length() == 0)
 		{
-			range_lookup.remove(key);
 			return;
 		}
 		
@@ -107,6 +118,11 @@ public class diskOperation {
 		//update lookup table
 		lookup_table.put(key, position);
 		
+		//add md5 to md5set,hashkey table
+		String tempMD5=myutilities.cHash(key);
+		MD5Set.add(tempMD5);
+		HashKey.put(tempMD5, key);
+		
 		
 		new_file_size=file_size+res.length();
 		myFile.update_file_size(file_path, new_file_size);
@@ -119,10 +135,26 @@ public class diskOperation {
 		lookup_table.clear();
 		//clean up file system
 		myFile.clearFile();
-		range_lookup.clear();
+		MD5Set.clear();
+		HashKey.clear();
 	}
 	
-	
+	// a function to get subset of key value pairs given a hash range
+	public ArrayList<KeyValuePair> get_subset(String lowerbound,String upperbound) throws IOException
+	{
+		ArrayList<KeyValuePair> res= new ArrayList<KeyValuePair>();
+		MD5Set.subSet(lowerbound, upperbound);
+		while(!MD5Set.isEmpty())
+		{
+			String tempHash=MD5Set.first();
+			String tempKey=HashKey.get(tempHash);
+			String tempValue=get(tempKey);
+			KeyValuePair tempPair=new KeyValuePair(tempKey,tempValue);
+			res.add(tempPair);
+			MD5Set.remove(tempHash);
+		}
+		return res;
+	}
 	
     private boolean get_EI_valid(String file_path, int position) throws IOException
     {
@@ -182,14 +214,9 @@ public class diskOperation {
     	return res;
     }
     
-    public SortedSet<String> ReturnSubRange(String first,String last)
-    {
-    	SortedSet<String>res=range_lookup.subSet(first, last);
-    	return res;
-    }
 	private HashMap<String, Integer> lookup_table;	
 	private Utilities myutilities;
 	private FileSystem myFile;
-	private SortedSet<String> range_lookup;
-
+	private SortedSet<String>MD5Set;
+	private HashMap<String,String>HashKey;
 }

@@ -14,9 +14,10 @@ import java.security.NoSuchAlgorithmException;
 
 
 public class Utilities {
-
 	public Utilities() {
 		// TODO Auto-generated constructor stub
+		//Key to MD5 lookup
+
 	}
 
 	
@@ -104,15 +105,19 @@ public class Utilities {
 	}
 	
 	//consistent hashing; return hex string
-	public String cHash(String myStr) throws UnsupportedEncodingException, NoSuchAlgorithmException{
+	public String cHash(String key) throws UnsupportedEncodingException, NoSuchAlgorithmException{
 		
-		byte[] temp = myStr.getBytes("UTF-8");
+
+		String res="";
+		byte[] temp = key.getBytes("UTF-8");
 		
 		MessageDigest md = MessageDigest.getInstance("MD5");
 		
 		byte [] hash = md.digest(temp);
 		
-		return byteArrayToHex(hash);
+		res=byteArrayToHex(hash);
+
+		return res;
 	}
 	
 	public String byteArrayToHex (byte[] myByteArray){
@@ -145,4 +150,6 @@ public class Utilities {
 	{
 		return Integer.toString(status.ordinal());
 	}
+	
+
 }

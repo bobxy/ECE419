@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
 public interface IKVServer {
@@ -121,5 +122,5 @@ public interface IKVServer {
 
 	public void update(String metadata);
 
-	void putKVonly(String key, String value) throws IOException;
+	public void putNoCache(String key, String value) throws IOException, NoSuchAlgorithmException;
 }
