@@ -2,10 +2,16 @@ package Utilities;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+
 import java.io.*;
 import java.util.*;
 import common.ServerConfigurations;
 import common.KVMessage.StatusType;
+
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 
 public class Utilities {
 
@@ -95,6 +101,29 @@ public class Utilities {
 	public boolean InvaildKey(String key)
 	{
 		return (key == null || key.contains(" ") || key.isEmpty() || key.length() > 20);
+	}
+	
+	//consistent hashing; return hex string
+	public String cHash(String myStr) throws UnsupportedEncodingException, NoSuchAlgorithmException{
+		
+		byte[] temp = myStr.getBytes("UTF-8");
+		
+		MessageDigest md = MessageDigest.getInstance("MD5");
+		
+		byte [] hash = md.digest(temp);
+		
+		return byteArrayToHex(hash);
+	}
+	
+	public String byteArrayToHex (byte[] myByteArray){
+		
+		StringBuilder sb = new StringBuilder(myByteArray.length*2);
+		
+		for (byte b:myByteArray){
+			sb.append(String.format("%02x", b));
+		}
+		
+		return sb.toString();
 	}
 
 	public byte[] SerializableToByteArray(ServerConfigurations sc) throws Exception

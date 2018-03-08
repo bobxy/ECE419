@@ -1,5 +1,7 @@
 package ecs;
 
+import java.util.Comparator;
+
 public interface IECSNode {
 
     /**
@@ -21,5 +23,11 @@ public interface IECSNode {
      * @return  array of two strings representing the low and high range of the hashes that the given node is responsible for
      */
     public String[] getNodeHashRange();
-
+    
+    public void setNodeHashRange(String lowerB, String upperB);
+    
+    public void setNodeHashValue(String value);
+    
+    public String getNodeHashValue();
+    
 }

@@ -1,7 +1,12 @@
 package app_kvECS;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Collection;
+
+import org.apache.zookeeper.KeeperException;
 
 import ecs.IECSNode;
 
@@ -30,8 +35,13 @@ public interface IECSClient {
     /**
      * Create a new KVServer with the specified cache size and replacement strategy and add it to the storage service at an arbitrary position.
      * @return  name of new server
+     * @throws InterruptedException 
+     * @throws KeeperException 
+     * @throws NoSuchAlgorithmException 
+     * @throws UnsupportedEncodingException 
+     * @throws IOException 
      */
-    public IECSNode addNode(String cacheStrategy, int cacheSize);
+    public IECSNode addNode(String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException, IOException;
 
     /**
      * Randomly choose <numberOfNodes> servers from the available machines and start the KVServer by issuing an SSH call to the respective machine.
@@ -39,14 +49,23 @@ public interface IECSClient {
      * same directory as the ECS. All storage servers are initialized with the metadata and any persisted data, and remain in state stopped.
      * NOTE: Must call setupNodes before the SSH calls to start the servers and must call awaitNodes before returning
      * @return  set of strings containing the names of the nodes
+     * @throws NoSuchAlgorithmException 
+     * @throws UnsupportedEncodingException 
+     * @throws InterruptedException 
+     * @throws KeeperException 
+     * @throws IOException 
      */
-    public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize);
+    public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException, IOException;
 
     /**
      * Sets up `count` servers with the ECS (in this case Zookeeper)
      * @return  array of strings, containing unique names of servers
+     * @throws NoSuchAlgorithmException 
+     * @throws UnsupportedEncodingException 
+     * @throws InterruptedException 
+     * @throws KeeperException 
      */
-    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize);
+    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException;
 
     /**
      * Wait for all nodes to report status or until timeout expires

@@ -1,17 +1,21 @@
 package ecs;
 
+import java.util.Comparator;
+
 public class ECSNode implements IECSNode{
 	
 	private String servName;
 	private String servAddr;
 	private int servPort;
 	private String[] servHashR;
+	private String servHashV;
 
 	public ECSNode(String name, String address, int port) {
 		// TODO Auto-generated constructor stub
 		servName = name;
 		servAddr = address;
 		servPort = port;
+		servHashR = new String[2];
 	}
 	
 	   /**
@@ -41,6 +45,17 @@ public class ECSNode implements IECSNode{
     public String[] getNodeHashRange(){
     	return servHashR;
     }
-
-
+    
+    public void setNodeHashRange(String lowerB, String upperB){
+    	servHashR[0]=lowerB;
+    	servHashR[1]=upperB;
+    }
+    
+    public String getNodeHashValue(){
+    	return servHashV;
+    }
+    
+    public void setNodeHashValue(String value){
+    	servHashV = value;
+    }
 }
