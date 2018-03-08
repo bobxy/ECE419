@@ -60,6 +60,8 @@ public class KVStore extends Thread implements KVCommInterface {
 		addListener(listener);
 		setRunning(true);
 		logger.info("Connection established");
+		if(!GetServerConfigurations())
+			logger.error("Client> " + "Error! " + "Unable to fetch server configurations!");
 		start();
 	}
 
