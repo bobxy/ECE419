@@ -119,4 +119,6 @@ public interface IKVServer {
 	public void shutDown();
 
 	public void update(String metadata);
+
+	void putKVonly(String key, String value);
 }

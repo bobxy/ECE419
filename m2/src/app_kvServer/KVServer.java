@@ -274,4 +274,10 @@ public class KVServer implements IKVServer {
     	//call parser from here
     	
     }
+    
+    @Override
+    public void putKVonly(String key,String value)
+    {
+    	DO.put(key, value);
+    }
 }
