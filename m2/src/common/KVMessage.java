@@ -17,7 +17,10 @@ public interface KVMessage {
 
 		SERVER_STOPPED,         /* Server is stopped, no requests are processed 9*/
 		SERVER_WRITE_LOCK,      /* Server locked for out, only get possible 10*/
-		SERVER_NOT_RESPONSIBLE  /* Request not successful, server not responsible for key 11*/
+		SERVER_NOT_RESPONSIBLE,  /* Request not successful, server not responsible for key 11*/
+		
+		REQUEST_SERVER_CONFIGURATIONS,
+		PUT_WITHOUT_CACHING
 	}
 
 	/**

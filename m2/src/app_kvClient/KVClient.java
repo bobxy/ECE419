@@ -218,6 +218,11 @@ public class KVClient implements IKVClient {
     
     private KVMessage get(String key) throws Exception {
     	KVMessage message = KVS.get(key);
+    	if(message.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE)
+    	{
+    		KVMessageC request = new KVMessageC(key, null, StatusType.GET);
+    		message = KVS.retry(request);
+    	}
     	return message;
     }
     
@@ -228,6 +233,11 @@ public class KVClient implements IKVClient {
     		return message;
     	}
     	KVMessage message = KVS.put(key, value);
+    	if(message.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE)
+    	{
+    		KVMessageC request = new KVMessageC(key, value, StatusType.PUT);
+    		message = KVS.retry(request);
+    	}
     	return message;
     }
     
@@ -262,6 +272,18 @@ public class KVClient implements IKVClient {
     	else if(code == StatusType.DELETE_ERROR)
     	{
     		System.out.println("DELETE ERROR");
+    	}
+    	else if(code == StatusType.SERVER_STOPPED)
+    	{
+    		System.out.println("Falied. The server has been stopped.");
+    	}
+    	else if(code == StatusType.SERVER_WRITE_LOCK)
+    	{
+    		System.out.println("Falied. The server is busy moving data.");
+    	}
+    	else if(code == StatusType.SERVER_NOT_RESPONSIBLE)
+    	{
+    		System.out.println("Falied. Something went wrong.");
     	}
     }
     
