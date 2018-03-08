@@ -1,5 +1,7 @@
 package app_kvServer;
 
+import java.util.HashMap;
+
 public interface IKVServer {
     public enum CacheStrategy {
         None,
@@ -112,7 +114,7 @@ public interface IKVServer {
      */
     public boolean moveData(String[] hashRange, String targetName) throws Exception;
 
-	public void initKVServer(String metadata,int cacheSize, String replacementStrategy);
+    public boolean initKVServer(HashMap metadata,int cacheSize, String replacementStrategy);
 
 	public void shutDown();
 

@@ -4,11 +4,15 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import logger.LogSetup;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
+import client.KVStore;
 
 import app_kvServer.IKVServer.CacheStrategy;
 
@@ -31,11 +35,19 @@ public class KVServer implements IKVServer {
 	private diskOperation DO;
 	private String sZKHostname;
 	private int nZKPort;
-	
+	private KVStore KVS;
+	private HashMap metadataMap;
+	private ReentrantLock ServerLock;
 	public KVServer(String name, String zkHostname, int zkPort) {
 		sHostname = name;
 		sZKHostname = zkHostname;
 		nZKPort = zkPort;
+		ServerLock=new ReentrantLock();
+    	//tcp connection to zookeeper
+    	//get metadata from zk
+		//parse metadata
+		//cache size cache strategy
+		//set watcher node
 	}
 
 	@Override
@@ -125,7 +137,64 @@ public class KVServer implements IKVServer {
 	
 	public void run() {
         
-    	running = initializeServer();
+    }
+    
+    private boolean isRunning() {
+        return this.running;
+    }
+    
+    
+    
+    public static void main(String[] args) {
+    	try {
+			new LogSetup("logs/server.log", Level.ALL);
+			if(args.length != 4) {
+				System.out.println("Error! Invalid number of arguments!");
+				System.out.println("Usage: Server <port> <cache_size> <cache_strategy>!");
+			} else {
+				String sName = args[0];
+				String sZKName = args[1];
+				int zkPort = Integer.parseInt(args[2]);
+				KVServer Server = new KVServer(sName, sZKName, zkPort);
+				//TODO
+				Server.start();
+			}
+		} catch (IOException e) {
+			System.out.println("Error! Unable to initialize logger!");
+			e.printStackTrace();
+			System.exit(1);
+		} catch (NumberFormatException nfe) {
+			System.out.println("Error! Invalid argument <port>! Not a number!");
+			System.out.println("Usage: Server <port>!");
+			System.exit(1);
+		}
+    }
+
+    @Override
+    public boolean initKVServer(HashMap metadata,int cacheSize, String replacementStrategy){
+    	//Initialize the KVServer with the metadata, it's local cache size, and the cache replacement strategy,
+    	//and block it for client requests, i.e., all client requests are rejected with an SERVER_STOPPED error message;
+    	//ECS requests have to be processed.
+		DO = new diskOperation();
+		DO.load_lookup_table();
+		if(replacementStrategy.equals("FIFO"))
+			CacheStrategy = IKVServer.CacheStrategy.FIFO;
+		else if(replacementStrategy.equals("LRU"))
+			CacheStrategy = IKVServer.CacheStrategy.LRU;
+		else if(replacementStrategy.equals("LFU"))
+			CacheStrategy = IKVServer.CacheStrategy.LFU;
+		else
+			CacheStrategy = IKVServer.CacheStrategy.None;
+		cache = new Cache(CacheStrategy, cacheSize);
+
+    	
+    }
+	@Override
+	public void start() {
+		// TODO
+		//Starts the KVServer, all client requests and all ECS requests are processed.
+
+    	running = initKVServer(metadataMap,nCacheSize,CacheStrategy);
         
         if(serverSocket != null) {
 	        while(isRunning()){
@@ -145,109 +214,40 @@ public class KVServer implements IKVServer {
 	        }
         }
         logger.info("Server stopped.");
-    }
-    
-    private boolean isRunning() {
-        return this.running;
-    }
-    
-    private boolean initializeServer() {
-    	logger.info("Initialize server ...");
-    	try {
-            serverSocket = new ServerSocket(nPort);
-            nPort = serverSocket.getLocalPort();
-            logger.info("Server listening on port: " 
-            		+ serverSocket.getLocalPort());    
-            return true;
-        
-        } catch (IOException e) {
-        	logger.error("Error! Cannot open server socket:");
-            if(e instanceof BindException){
-            	logger.error("Port " + nPort + " is already bound!");
-            }
-            return false;
-        }
-    }
-    
-    public void Configure()
-    {
-    	//create a listener on port nZKPort, wait for zoo keeper to send all the configurations
-    	//set all the values and configure the server according to all the values
-    	/*
-    	nPort = port;
-		nCacheSize = cacheSize;
-		DO = new diskOperation();
-		DO.load_lookup_table();
-		if(strategy.equals("FIFO"))
-			CacheStrategy = IKVServer.CacheStrategy.FIFO;
-		else if(strategy.equals("LRU"))
-			CacheStrategy = IKVServer.CacheStrategy.LRU;
-		else if(strategy.equals("LFU"))
-			CacheStrategy = IKVServer.CacheStrategy.LFU;
-		else
-			CacheStrategy = IKVServer.CacheStrategy.None;
-		cache = new Cache(CacheStrategy, cacheSize);
-		*/
-    }
-    
-    public static void main(String[] args) {
-    	try {
-			new LogSetup("logs/server.log", Level.ALL);
-			if(args.length != 4) {
-				System.out.println("Error! Invalid number of arguments!");
-				System.out.println("Usage: Server <port> <cache_size> <cache_strategy>!");
-			} else {
-				String sName = args[0];
-				String sZKName = args[1];
-				int zkPort = Integer.parseInt(args[2]);
-				KVServer Server = new KVServer(sName, sZKName, zkPort);
-				Server.Configure();
-				Server.start();
-			}
-		} catch (IOException e) {
-			System.out.println("Error! Unable to initialize logger!");
-			e.printStackTrace();
-			System.exit(1);
-		} catch (NumberFormatException nfe) {
-			System.out.println("Error! Invalid argument <port>! Not a number!");
-			System.out.println("Usage: Server <port>!");
-			System.exit(1);
-		}
-    }
 
-    @Override
-    public void initKVServer(String metadata,int cacheSize, String replacementStrategy){
-    	//Initialize the KVServer with the metadata, it's local cache size, and the cache replacement strategy,
-    	//and block it for client requests, i.e., all client requests are rejected with an SERVER_STOPPED error message;
-    	//ECS requests have to be processed.
-    	
-    }
-	@Override
-	public void start() {
-		// TODO
-		//Starts the KVServer, all client requests and all ECS requests are processed.
 	}
 
     @Override
     public void stop() {
 		// TODO
     	//Stops the KVServer, all client requests are rejected and only ECS requests are processed.
+		running = false;
+        try {
+			serverSocket.close();
+		} catch (IOException e) {
+			logger.error("Error! " +
+					"Unable to close socket on port: " + nPort, e);
+		}
 	}
 
     @Override
     public void shutDown() {
     	//Exits the KVServer application.
+    	//move data to next
     }
     @Override
     public void lockWrite() {
 		// TODO
     	//Lock the KVServer for write operations.
+    	//lock current server for write operations
+    	ServerLock.lock();
 	}
 
     @Override
     public void unlockWrite() {
 		// TODO
     	//Unlock the KVServer for write operations.
+    	ServerLock.unlock();
 	}
 
     @Override
@@ -256,11 +256,22 @@ public class KVServer implements IKVServer {
     	//Transfer a subset (range) of the KVServer's data to another KVServer 
     	//(reallocation before removing this server or adding a new KVServer to the ring); 
     	//send a notification to the ECS, if data transfer is completed.
+		//create KVStore object here to take connections from client
+    	//use targetName to find appropriate address, port
+    	String TargetHostname;
+    	int TargetPort;
+		KVS = new KVStore(TargetHostname, TargetPort);
+		KVS.connect();
+		//determine which key value pairs need to move.
+		//use kv message to send all the pairs to target
+		ValidateReturnedMessage(put(key, value));
 		return false;
 	}
     
     @Override
     public void update(String metadata) {
+    	//Update the metadata repository of this server
+    	//call parser from here
     	
     }
 }
