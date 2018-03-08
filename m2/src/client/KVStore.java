@@ -12,8 +12,10 @@ import client.ClientSocketListenerInterface.SocketStatus;
 import common.KVMessage;
 import common.KVMessageC;
 import common.KVMessage.StatusType;
+import common.ServerConfigurations;
+import common.ServerConfiguration;
 
-public class KVStore implements KVCommInterface {
+public class KVStore extends Thread implements KVCommInterface {
 	/**
 	 * Initialize KVStore with address and port of KVServer
 	 * 
@@ -34,9 +36,12 @@ public class KVStore implements KVCommInterface {
 	private KVMessageC kvmsg;
 	private boolean bReceived;
 	private Utilities util;
-
+	private boolean bWaitingForConfigurations;
+	private ServerConfigurations sc;
+	
 	public KVStore(String address, int port) {
 		// TODO Auto-generated method stub
+		bWaitingForConfigurations = false;
 		addr = address;
 		portnum = port;
 		listeners = new HashSet<ClientSocketListener>();
@@ -79,7 +84,10 @@ public class KVStore implements KVCommInterface {
 				try {
 					TextMessage latestMsg = stream.receiveMessage();
 					for (ClientSocketListener listener : listeners) {
-						kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
+						if(bWaitingForConfigurations)
+							sc = util.ByteArrayToSerializable(latestMsg.getMsgBytes());
+						else
+							kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
 						bReceived = true;
 					}
 				} catch (IOException ioe) {
@@ -146,6 +154,7 @@ public class KVStore implements KVCommInterface {
 						StatusType.PUT_ERROR);
 				return message;
 			}
+			reconnect(key);
 			if (value == null)
 				value = "";
 			String msg = "3 " + key + " " + value;
@@ -165,11 +174,39 @@ public class KVStore implements KVCommInterface {
 		return kvmsg;
 	}
 
+	public KVMessage putNoCache(String key, String value) throws Exception {
+		// turn string into textmsg obj
+		// send it to server
+		try {
+			if (util.InvaildKey(key)) {
+				KVMessageC message = new KVMessageC(key, value,
+						StatusType.PUT_ERROR);
+				return message;
+			}
+			if (value == null)
+				value = "";
+			String msg = util.StatusCodeToString(StatusType.PUT_WITHOUT_CACHING) + " " + key + " " + value;
+			stream.sendMessage(new TextMessage(msg));
+		} catch (IOException e) {
+			logger.error("Client> " + "Error! " + "Unable to send message!");
+			disconnect();
+		}
+
+		while (true) {
+			Thread.sleep(1);
+			if (bReceived) {
+				bReceived = false;
+				break;
+			}
+		}
+		return kvmsg;
+	}
+	
 	@Override
 	public KVMessage get(String key) throws Exception {
 		// TODO Auto-generated method stub
 		try {
-
+			reconnect(key);
 			String msg = "0 " + key;
 			stream.sendMessage(new TextMessage(msg));
 		} catch (IOException e) {
@@ -184,5 +221,73 @@ public class KVStore implements KVCommInterface {
 			}
 		}
 		return kvmsg;
+	}
+	
+	public KVMessage retry(KVMessageC msg) throws Exception
+	{
+		StatusType type = msg.getStatus();
+		if(GetServerConfigurations())
+		{
+			if(type == StatusType.PUT)
+			{
+				return put(msg.getKey(), msg.getValue());
+			}
+			else if(type == StatusType.GET)
+			{
+				return get(msg.getKey());
+			}
+		}
+		else
+		{
+			if(type == StatusType.PUT)
+			{
+				return new KVMessageC(msg.getKey(), msg.getValue(), StatusType.PUT_ERROR);
+			}
+			else if(type == StatusType.GET)
+			{
+				return new KVMessageC(msg.getKey(), msg.getValue(), StatusType.GET_ERROR);
+			}
+		}
+		return null;
+	}
+	
+	private boolean GetServerConfigurations() throws Exception
+	{
+		bWaitingForConfigurations = true;
+		try
+		{
+			String sRequest = util.StatusCodeToString(StatusType.REQUEST_SERVER_CONFIGURATIONS);
+			stream.sendMessage(new TextMessage(sRequest));
+		}
+		catch (IOException e)
+		{
+			logger.error("Client> " + "Error! " + "Unable to send message!");
+			disconnect();
+			bWaitingForConfigurations = false;
+			return false;
+		}
+		
+		while (true) {
+			Thread.sleep(1);
+			if (bReceived) {
+				bReceived = false;
+				break;
+			}
+		}
+		bWaitingForConfigurations = false;
+		return sc.IsEmpty();
+	}
+	
+	private void reconnect(String sKey) throws Exception
+	{
+		ServerConfiguration config = sc.FindServerForKey(sKey);
+		int nNewPort = config.GetPort();
+		String sNewAddress = config.GetAddress();
+		if(nNewPort != portnum || !addr.equals(sNewAddress))
+		{
+			addr = sNewAddress;
+			portnum = nNewPort;
+			connect();
+		}
 	}
 }

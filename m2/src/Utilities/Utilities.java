@@ -2,6 +2,10 @@ package Utilities;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.*;
+import java.util.*;
+import common.ServerConfigurations;
+import common.KVMessage.StatusType;
 
 public class Utilities {
 
@@ -93,4 +97,23 @@ public class Utilities {
 		return (key == null || key.contains(" ") || key.isEmpty() || key.length() > 20);
 	}
 
+	public byte[] SerializableToByteArray(ServerConfigurations sc) throws Exception
+	{
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutput out = new ObjectOutputStream(bos);
+		out.writeObject(sc);
+		return bos.toByteArray();
+	}
+	
+	public ServerConfigurations ByteArrayToSerializable(byte[] ba) throws Exception
+	{
+		ByteArrayInputStream bis = new ByteArrayInputStream(ba);
+		ObjectInput in = new ObjectInputStream(bis);
+		return (ServerConfigurations)in.readObject();
+	}
+	
+	public String StatusCodeToString(StatusType status)
+	{
+		return Integer.toString(status.ordinal());
+	}
 }
