@@ -163,6 +163,8 @@ public class KVStore extends Thread implements KVCommInterface {
 				String msg = "3 " + key + " " + value;
 				stream.sendMessage(new TextMessage(msg));
 			}
+			else
+				return new KVMessageC(key, null, StatusType.PUT_ERROR);
 		} catch (IOException e) {
 			logger.error("Client> " + "Error! " + "Unable to send message!");
 			disconnect();
@@ -215,6 +217,8 @@ public class KVStore extends Thread implements KVCommInterface {
 				String msg = "0 " + key;
 				stream.sendMessage(new TextMessage(msg));
 			}
+			else
+				return new KVMessageC(key, null, StatusType.GET_ERROR);
 		} catch (IOException e) {
 			logger.error("Client> " + "Error! " + "Unable to send message!");
 			disconnect();
