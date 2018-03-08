@@ -77,4 +77,12 @@ public class ServerConfiguration implements Serializable{
 	{
 		return sHashValue;
 	}
+	
+	public Boolean IsResponsible(String sHashValue)
+	{
+		if(sUpper.compareTo(sLower) > 0)
+			return (sLower.compareTo(sHashValue) < 0) && (sUpper.compareTo(sHashValue) > 0);
+		else
+			return (sLower.compareTo(sHashValue) > 0) && (sUpper.compareTo(sHashValue) < 0);
+	}
 }
