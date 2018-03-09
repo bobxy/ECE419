@@ -39,14 +39,15 @@ public class KVServer implements IKVServer {
 	private int nZKPort;
 	private KVStore ServerKVStore;
 	private HashMap metadataMap;
-	private ReentrantLock ServerLock;
+	private boolean WriteLockFlag;
 	private boolean HandleClientRequest;
 	public KVServer(String name, String zkHostname, int zkPort) {
 		sHostname = name;
 		sZKHostname = zkHostname;
 		nZKPort = zkPort;
-		ServerLock=new ReentrantLock();
+		
 		HandleClientRequest=false;
+		WriteLockFlag=false;
     	//tcp connection to zookeeper
     	//get metadata from zk
 		//parse metadata
@@ -210,14 +211,14 @@ public class KVServer implements IKVServer {
 		// TODO
     	//Lock the KVServer for write operations.
     	//lock current server for write operations
-    	ServerLock.lock();
+    	WriteLockFlag=true;
 	}
 
     @Override
     public void unlockWrite() {
 		// TODO
     	//Unlock the KVServer for write operations.
-    	ServerLock.unlock();
+    	WriteLockFlag=true;
 	}
 
     @Override

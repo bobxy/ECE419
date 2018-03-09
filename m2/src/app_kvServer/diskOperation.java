@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.locks.ReentrantLock;
 
 import Utilities.Utilities;
 
@@ -20,6 +21,7 @@ public class diskOperation {
 		myFile.insert_file("test.file");
 		MD5Set = new TreeSet<>();
 		HashKey=new HashMap<String,String>();
+		WriterLock=new ReentrantLock();
 	}
 	
 	public boolean inStorage(String key)
@@ -85,6 +87,7 @@ public class diskOperation {
 	}
     
 	public void put(String key, String value) throws IOException, NoSuchAlgorithmException{
+		WriterLock.lock();
 		String file_path=myFile.get_file_path(key);
 		int file_size=myFile.get_file_size(file_path);
 		//append to the end of file
@@ -126,6 +129,8 @@ public class diskOperation {
 		
 		new_file_size=file_size+res.length();
 		myFile.update_file_size(file_path, new_file_size);
+		
+		WriterLock.unlock();
 		return;
 			
 	}
@@ -219,4 +224,5 @@ public class diskOperation {
 	private FileSystem myFile;
 	private SortedSet<String>MD5Set;
 	private HashMap<String,String>HashKey;
+	private ReentrantLock WriterLock;
 }
