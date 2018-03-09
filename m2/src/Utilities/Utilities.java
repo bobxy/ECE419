@@ -5,6 +5,8 @@ import java.io.RandomAccessFile;
 
 import java.io.*;
 import java.util.*;
+
+import common.ServerConfiguration;
 import common.ServerConfigurations;
 import common.KVMessage.StatusType;
 
@@ -151,5 +153,19 @@ public class Utilities {
 		return Integer.toString(status.ordinal());
 	}
 	
+	public byte[] ServerConfigSerializableToByteArray(ServerConfiguration sc) throws Exception
+	{
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutput out = new ObjectOutputStream(bos);
+		out.writeObject(sc);
+		return bos.toByteArray();
+	}
+	
+	public ServerConfiguration ServerConfigByteArrayToSerializable(byte[] ba) throws Exception
+	{
+		ByteArrayInputStream bis = new ByteArrayInputStream(ba);
+		ObjectInput in = new ObjectInputStream(bis);
+		return (ServerConfiguration)in.readObject();
+	}
 
 }
