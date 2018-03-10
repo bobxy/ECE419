@@ -120,7 +120,8 @@ public interface IKVServer {
 
 	public void shutDown();
 
-	public void update(String metadata);
 
 	public void putNoCache(String key, String value) throws IOException, NoSuchAlgorithmException;
+
+	void update(byte[] metadata);
 }

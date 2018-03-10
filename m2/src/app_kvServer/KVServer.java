@@ -16,6 +16,7 @@ import org.apache.log4j.Logger;
 
 import client.KVStore;
 
+import app_kvECS.ZKConnection;
 import app_kvServer.IKVServer.CacheStrategy;
 
 public class KVServer implements IKVServer {
@@ -41,6 +42,7 @@ public class KVServer implements IKVServer {
 	private HashMap metadataMap;
 	private boolean WriteLockFlag;
 	private boolean HandleClientRequest;
+	private ZKConnection zkC;
 	public KVServer(String name, String zkHostname, int zkPort) {
 		sHostname = name;
 		sZKHostname = zkHostname;
@@ -218,7 +220,7 @@ public class KVServer implements IKVServer {
     public void unlockWrite() {
 		// TODO
     	//Unlock the KVServer for write operations.
-    	WriteLockFlag=true;
+    	WriteLockFlag=false;
 	}
 
     @Override
@@ -248,7 +250,7 @@ public class KVServer implements IKVServer {
 	}
     
     @Override
-    public void update(String metadata) {
+    public void update(byte[] metadata) {
     	//Update the metadata repository of this server
     	//call parser from here
     	
