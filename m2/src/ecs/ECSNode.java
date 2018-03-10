@@ -9,6 +9,7 @@ public class ECSNode implements IECSNode{
 	private int servPort;
 	private String[] servHashR;
 	private String servHashV;
+	private String servStatus;
 
 	public ECSNode(String name, String address, int port) {
 		// TODO Auto-generated constructor stub
@@ -16,6 +17,7 @@ public class ECSNode implements IECSNode{
 		servAddr = address;
 		servPort = port;
 		servHashR = new String[2];
+		servStatus = "uninitialized";
 	}
 	
 	   /**
@@ -45,7 +47,7 @@ public class ECSNode implements IECSNode{
     public String[] getNodeHashRange(){
     	return servHashR;
     }
-    
+   
     public void setNodeHashRange(String lowerB, String upperB){
     	servHashR[0]=lowerB;
     	servHashR[1]=upperB;
@@ -58,4 +60,13 @@ public class ECSNode implements IECSNode{
     public void setNodeHashValue(String value){
     	servHashV = value;
     }
+    
+    public String getNodeStatus(){
+    	return servStatus;
+    }
+    
+    public void setNodeStatus(String status){
+    	servStatus = status;
+    }
+
 }
