@@ -1,7 +1,7 @@
 package common;
 import java.io.*;
 import java.util.*;
-
+import ecs.*;
 public class ServerConfiguration implements Serializable{
 	private static final long serialVersionUID = 2L;
 	private String sAddress;
@@ -10,6 +10,7 @@ public class ServerConfiguration implements Serializable{
 	private String sLower;
 	private String sHashValue;
 	private String sStatus;
+	private String sName;
 	
 	public ServerConfiguration()
 	{
@@ -19,9 +20,10 @@ public class ServerConfiguration implements Serializable{
 		sLower = "";
 		sHashValue = "";
 		sStatus = "";
+		sName = "";
 	}
 	
-	public ServerConfiguration(String address, int port, String upper, String lower, String HashValue, String status)
+	public ServerConfiguration(String address, int port, String upper, String lower, String HashValue, String status, String Name)
 	{
 		sAddress = address;
 		nPort = port;
@@ -29,6 +31,19 @@ public class ServerConfiguration implements Serializable{
 		sLower = lower;
 		sHashValue = HashValue;
 		sStatus = status;
+		sName = Name;
+	}
+	
+	public ServerConfiguration(ECSNode node)
+	{
+		sAddress = node.getNodeHost();
+		nPort = node.getNodePort();
+		String[] Bounds = node.getNodeHashRange();
+		sUpper = Bounds[1];
+		sLower = Bounds[0];
+		sHashValue = node.getNodeHashValue();
+		sStatus = node.getNodeStatus();
+		sName = node.getNodeName();
 	}
 	
 	public void SetAddress(String address)
@@ -61,6 +76,11 @@ public class ServerConfiguration implements Serializable{
 		sStatus = status;
 	}
 	
+	public void SetName(String Name)
+	{
+		sName = Name;
+	}
+	
 	public String GetAddress()
 	{
 		return sAddress;
@@ -89,6 +109,11 @@ public class ServerConfiguration implements Serializable{
 	public String GetStatus()
 	{
 		return sStatus;
+	}
+	
+	public String GetName()
+	{
+		return sName;
 	}
 	
 	public Boolean IsResponsible(String sHashValue)

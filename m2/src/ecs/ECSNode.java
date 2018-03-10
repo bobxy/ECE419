@@ -1,6 +1,7 @@
 package ecs;
 
 import java.util.Comparator;
+import common.ServerConfiguration;
 
 public class ECSNode implements IECSNode{
 	
@@ -20,6 +21,16 @@ public class ECSNode implements IECSNode{
 		servStatus = "uninitialized";
 	}
 	
+	public ECSNode(ServerConfiguration config)
+	{
+		servName = config.GetName();
+		servAddr = config.GetAddress();
+		servPort = config.GetPort();
+		servHashR = new String[2];
+		servHashR[0] = config.GetLower();
+		servHashR[1] = config.GetUpper();
+		servStatus = config.GetStatus();
+	}
 	   /**
      * @return  the name of the node (ie "Server 8.8.8.8")
      */

@@ -109,8 +109,6 @@ public class Utilities {
 	//consistent hashing; return hex string
 	public String cHash(String key) throws UnsupportedEncodingException, NoSuchAlgorithmException{
 		
-
-		String res="";
 		byte[] temp = key.getBytes("UTF-8");
 		
 		MessageDigest md = MessageDigest.getInstance("MD5");
