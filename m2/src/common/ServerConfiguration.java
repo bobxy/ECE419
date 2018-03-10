@@ -83,6 +83,6 @@ public class ServerConfiguration implements Serializable{
 		if(sUpper.compareTo(sLower) > 0)
 			return (sLower.compareTo(sHashValue) < 0) && (sUpper.compareTo(sHashValue) > 0);
 		else
-			return (sLower.compareTo(sHashValue) > 0) && (sUpper.compareTo(sHashValue) < 0);
+			return (sLower.compareTo(sHashValue) < 0) || (sUpper.compareTo(sHashValue) > 0);
 	}
 }

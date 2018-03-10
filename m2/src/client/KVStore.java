@@ -266,6 +266,7 @@ public class KVStore extends Thread implements KVCommInterface {
 		bWaitingForConfigurations = true;
 		try
 		{
+			sc = null;
 			String sRequest = util.StatusCodeToString(StatusType.REQUEST_SERVER_CONFIGURATIONS);
 			stream.sendMessage(new TextMessage(sRequest));
 		}
@@ -285,11 +286,14 @@ public class KVStore extends Thread implements KVCommInterface {
 			}
 		}
 		bWaitingForConfigurations = false;
-		return sc.IsEmpty();
+		return (sc != null) && !sc.IsEmpty();
 	}
 	
 	private boolean reconnect(String sKey) throws Exception
 	{
+		if(sc == null)
+			return false;
+		
 		ServerConfiguration config = sc.FindServerForKey(sKey);
 		if(config != null)
 		{
