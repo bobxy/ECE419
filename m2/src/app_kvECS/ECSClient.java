@@ -26,6 +26,8 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.*;
 
+import common.ServerConfiguration;
+
 import Utilities.Utilities;
 
 
@@ -88,6 +90,15 @@ public class ECSClient implements IECSClient {
     @Override
     public boolean start() {
         // TODO
+    	String path;
+    	
+    	for (IECSNode e:activeECSNodeList){
+    		 
+    		path = "/servers/" + e.getNodeName();
+    		
+    		
+    		
+    	}
         return false;
     }
 
@@ -125,11 +136,11 @@ public class ECSClient implements IECSClient {
     	}
     	
     	
-    	String path = "/servers/" + ((ArrayList <IECSNode>)newNodes).get(0).getNodeHost() + "/status";
+    	//String path = "/servers/" + ((ArrayList <IECSNode>)newNodes).get(0).getNodeHost() + "/status";
     	
-    	byte[] data = "SERVER_START".getBytes();
+    	//byte[] data = "SERVER_START".getBytes();
     			
-    	zk.setData(path, data, zk.exists(path, false).getVersion());
+    	//zk.setData(path, data, zk.exists(path, false).getVersion());
     			
         return ((ArrayList <IECSNode>)newNodes).get(0);
     }
@@ -244,13 +255,15 @@ public class ECSClient implements IECSClient {
     		
     		for (IECSNode node:activeECSNodeList){
     			
-    			String path = "/servers/" + node.getNodeName() + "/status";
+    			String path = "/servers/" + node.getNodeName();
     			
     			byte[] temp = zk.getData(path, false, null);
+    			    			
+    			//String status = new String (temp,"UTF-8");
     			
-    			String status = new String (temp,"UTF-8");
+    			ServerConfiguration sc = uti.ServerConfigByteArrayToSerializable(temp);
     			
-    			if (!status.equals("none")){
+    			if (!sc.GetStatus().equals("uninitialized")){
     				rdyServCount++;
     			}
     		}
@@ -463,7 +476,7 @@ public class ECSClient implements IECSClient {
     	System.out.println("Please follow the following formats for the instructions");
     	System.out.println(ADDNODES + " <number of nodes>"  + " <replacement strategy>" + " <size of cache>");
     	System.out.println(ADDNODE + " <replacement strategy>" + " <size of cache>");
-    	System.out.println(REMOVENODE + " node name 1" + " node name 2" + " ...");
+    	System.out.println(REMOVENODE + " <node name 1>" + " <node name 2>" + " ...");
     	System.out.println(GETNODE + " <key>");
     	System.out.println(START);
     	System.out.println(STOP);
@@ -555,43 +568,60 @@ public class ECSClient implements IECSClient {
     		
     		String servName = servNode.getNodeName();
     		String servAddr = servNode.getNodeHost();
-    		String servPort = Integer.toString(servNode.getNodePort());
+    		int servPort = servNode.getNodePort();
+    		String servHashV = servNode.getNodeHashValue();
     		String[] servHashR = servNode.getNodeHashRange();
+    		String servStatus = servNode.getNodeStatus();
     		
     		//check if znode already exist and modify
     		String path = "/servers/" + servName;
-    		String addrPath = path + "/addr";
-			String portPath = path + "/port";
-			String hRangePath = path + "/range";
-			String statusPath = path + "/status";
+    		//String addrPath = path + "/addr";
+			//String portPath = path + "/port";
+			//String hRangePath = path + "/range";
+			//String statusPath = path + "/status";
 			
-			byte[] nameData = servName.getBytes();
+			/*byte[] nameData = servName.getBytes();
 			byte[] addrData = servAddr.getBytes();
 			byte[] portData = servPort.getBytes();
 			byte[] hRangeData = (servHashR[0] + servHashR[1]).getBytes();
 			byte[] statusData = "none".getBytes();
-			
-			System.out.println("UMD1");
+			*/
+    		ServerConfiguration servConfig = new ServerConfiguration(servAddr,servPort,servHashR[1],servHashR[0],servHashV,servStatus);
     		
-    		if (zk.exists(path, true) != null){
-    			 
-    			System.out.println("exist0");
-    			//if server already exist, only need to update hash range
-    			zk.setData(hRangePath, hRangeData, zk.exists(hRangePath, true).getVersion());
-    			System.out.println("exist1");
-    		}
-    		
-    		//else doesn't exist create new znode
-    		else{
+    		byte[] data;
 			
-    			zk.create(path, nameData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			zk.create(addrPath, addrData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			zk.create(portPath, portData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			zk.create(hRangePath, hRangeData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			zk.create(statusPath, statusData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			//set watcher on status??
-    		}
-    		System.out.println("UMD2");
+    		try {
+				data = uti.ServerConfigSerializableToByteArray(servConfig);
+				
+				if (zk.exists(path, true) != null){
+	    			 
+	    			System.out.println("exist0");
+	    			//if server already exist, only need to update hash range
+	    			//zk.setData(hRangePath, hRangeData, zk.exists(hRangePath, true).getVersion());
+	    			zk.setData(path, data, zk.exists(path, true).getVersion());
+	    			System.out.println("exist1");
+	    		}
+	    		
+	    		//else doesn't exist create new znode
+	    		else{
+				
+	    			zk.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//zk.create(addrPath, addrData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//zk.create(portPath, portData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//zk.create(hRangePath, hRangeData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//zk.create(statusPath, statusData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//set watcher on status??
+	    		}
+	    		System.out.println("UMD1");
+			} catch (Exception e) {
+				
+				e.printStackTrace();
+				System.out.println("failed to serialize server configuration");
+			}
+    			
+			System.out.println("UMD2");
+    		
+    		
     	}
     }
     

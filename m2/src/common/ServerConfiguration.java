@@ -9,6 +9,7 @@ public class ServerConfiguration implements Serializable{
 	private String sUpper;
 	private String sLower;
 	private String sHashValue;
+	private String sStatus;
 	
 	public ServerConfiguration()
 	{
@@ -17,15 +18,17 @@ public class ServerConfiguration implements Serializable{
 		sUpper = "";
 		sLower = "";
 		sHashValue = "";
+		sStatus = "";
 	}
 	
-	public ServerConfiguration(String address, int port, String upper, String lower, String HashValue)
+	public ServerConfiguration(String address, int port, String upper, String lower, String HashValue, String status)
 	{
 		sAddress = address;
 		nPort = port;
 		sUpper = upper;
 		sLower = lower;
 		sHashValue = HashValue;
+		sStatus = status;
 	}
 	
 	public void SetAddress(String address)
@@ -53,6 +56,11 @@ public class ServerConfiguration implements Serializable{
 		sHashValue = HashValue;
 	}
 	
+	public void SetStatus(String status)
+	{
+		sStatus = status;
+	}
+	
 	public String GetAddress()
 	{
 		return sAddress;
@@ -76,6 +84,11 @@ public class ServerConfiguration implements Serializable{
 	public String GetHashValue()
 	{
 		return sHashValue;
+	}
+	
+	public String GetStatus()
+	{
+		return sStatus;
 	}
 	
 	public Boolean IsResponsible(String sHashValue)
