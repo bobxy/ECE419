@@ -7,15 +7,22 @@ import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 import logger.LogSetup;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
+
+import common.ServerConfiguration;
+import common.ServerConfigurations;
 
 import client.KVStore;
 
+import Utilities.Utilities;
 import app_kvECS.ZKConnection;
 import app_kvServer.IKVServer.CacheStrategy;
 
@@ -43,21 +50,44 @@ public class KVServer implements IKVServer {
 	private boolean WriteLockFlag;
 	private boolean HandleClientRequest;
 	private ZKConnection zkC;
-	public KVServer(String name, String zkHostname, int zkPort) {
+	private ZooKeeper zk;
+	private ServerConfigurations SVCs;
+	private Utilities myutilities;
+	private String ServerMD5Hash;
+	public KVServer(String name, String zkHostname, int zkPort) throws Exception {
 		sHostname = name;
 		sZKHostname = zkHostname;
 		nZKPort = zkPort;
 		
 		HandleClientRequest=false;
 		WriteLockFlag=false;
-    	//tcp connection to zookeeper
-    	//get metadata from zk
-		//parse metadata
-		//cache size cache strategy
-		//set watcher node
+		myutilities = new Utilities();
+		ServerMD5Hash="";
+		
+		update();
 		
 	}
 
+	/*public ServerConfigurations constructMetaData() throws Exception
+	{
+		ServerConfigurations res=new ServerConfigurations();
+		zkC= new ZKConnection();
+		zk = zkC.connect(sZKHostname+":"+nZKPort);
+
+		List<String> childrenList=zk.getChildren("/servers/", true);
+		for(String child: childrenList)
+		{
+			String mypath="/servers/"+child;
+			byte[] temp=zk.getData(mypath, true, zk.exists(mypath, true));
+			ServerConfiguration svc= myutilities.ServerConfigByteArrayToSerializable(temp);
+			if(svc.GetName()==sHostname)
+			{
+				ServerMD5Hash=svc.GetHashValue();
+			}
+			res.AddServer(svc);
+		}
+		return res;
+	}*/
 	@Override
 	public int getPort(){
 		return nPort;
@@ -143,9 +173,7 @@ public class KVServer implements IKVServer {
 		}
 	}
 	
-	public void run() {
-        
-    }
+
     
     private boolean isRunning() {
         return this.running;
@@ -153,7 +181,7 @@ public class KVServer implements IKVServer {
     
     
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
     	try {
 			new LogSetup("logs/server.log", Level.ALL);
 			if(args.length != 4) {
@@ -179,14 +207,57 @@ public class KVServer implements IKVServer {
     }
 
     @Override
-    public boolean initKVServer(HashMap metadata,int cacheSize, String replacementStrategy){
+    public boolean initKVServer() throws NoSuchAlgorithmException, IOException{
     	//Initialize the KVServer with the metadata, it's local cache size, and the cache replacement strategy,
     	//and block it for client requests, i.e., all client requests are rejected with an SERVER_STOPPED error message;
     	//ECS requests have to be processed.
-    	boolean res=true;
-    	return res;
+    	boolean res=false;
+    	ServerConfiguration currentSVC=SVCs.FindServerByServerNameHash(ServerMD5Hash);
+    	String strategy=currentSVC.GetStrategy();
+		DO = new diskOperation();
+		DO.load_lookup_table();
+		
+		if(strategy.equals("FIFO"))
+			CacheStrategy = IKVServer.CacheStrategy.FIFO;
+		else if(strategy.equals("LRU"))
+			CacheStrategy = IKVServer.CacheStrategy.LRU;
+		else if(strategy.equals("LFU"))
+			CacheStrategy = IKVServer.CacheStrategy.LFU;
+		else
+			CacheStrategy = IKVServer.CacheStrategy.None;
+		cache = new Cache(CacheStrategy, cacheSize);
+    	
+		nPort=currentSVC.GetPort();
+        serverSocket = new ServerSocket(nPort);
+        
+    	return true;
 
     	
+    }
+    
+    
+	public void run() throws NoSuchAlgorithmException, IOException {
+        
+    	running = initKVServer();
+        
+        if(serverSocket != null) {
+	        while(isRunning()){
+	            try {
+	                Socket client = serverSocket.accept();                
+	                ClientConnection connection = 
+	                		new ClientConnection(client, this);
+	                new Thread(connection).start();
+	                
+	                logger.info("Connected to " 
+	                		+ client.getInetAddress().getHostName() 
+	                		+  " on port " + client.getPort());  
+	            } catch (IOException e) {
+	            	logger.error("Error! " +
+	            			"Unable to establish connection. \n", e);
+	            }
+	        }
+        }
+        logger.info("Server stopped.");
     }
 	@Override
 	public void start() {
@@ -204,9 +275,18 @@ public class KVServer implements IKVServer {
 	}
 
     @Override
-    public void shutDown() {
+    public void shutDown() throws Exception {
     	//Exits the KVServer application.
     	//move data to next
+    	//first target
+    	ServerConfiguration tempSV=SVCs.FindNextHigher(ServerMD5Hash);
+    	//send to tempSV
+    	String[] hashRange=new String[2];
+    	hashRange[0]=tempSV.GetLower();
+    	hashRange[1]=tempSV.GetUpper();
+    	boolean finished=moveData(hashRange,tempSV.GetHashValue());
+    	
+    	
     }
     @Override
     public void lockWrite() {
@@ -231,9 +311,11 @@ public class KVServer implements IKVServer {
     	//send a notification to the ECS, if data transfer is completed.
 		//create KVStore object here to take connections from client
     	//use targetName to find appropriate address, port
-    	String TargetHostname="";
-    	int TargetPort=0;
+    	ServerConfiguration tempSVC=SVCs.FindServerByServerNameHash(targetName);
+    	String TargetHostname=tempSVC.GetAddress();
+    	int TargetPort=tempSVC.GetPort();
     	ServerKVStore = new KVStore(TargetHostname,TargetPort);
+    	
     	// find all key value pairs fall into this range
     	String lowerbound=hashRange[0];
     	String upperbound=hashRange[1];
@@ -246,13 +328,29 @@ public class KVServer implements IKVServer {
     	
     	ListToMove.clear();
     	
-		return false;
+		return true;
 	}
     
     @Override
-    public void update(byte[] metadata) {
+    public void update() throws Exception {
     	//Update the metadata repository of this server
-    	//call parser from here
+		ServerConfigurations res=new ServerConfigurations();
+		zkC= new ZKConnection();
+		zk = zkC.connect(sZKHostname+":"+nZKPort);
+
+		List<String> childrenList=zk.getChildren("/servers/", true);
+		for(String child: childrenList)
+		{
+			String mypath="/servers/"+child;
+			byte[] temp=zk.getData(mypath, true, zk.exists(mypath, true));
+			ServerConfiguration svc= myutilities.ServerConfigByteArrayToSerializable(temp);
+			if(svc.GetName()==sHostname)
+			{
+				ServerMD5Hash=svc.GetHashValue();
+			}
+			res.AddServer(svc);
+		}
+		SVCs=res;
     	
     }
     

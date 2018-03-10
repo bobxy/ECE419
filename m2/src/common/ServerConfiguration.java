@@ -11,7 +11,7 @@ public class ServerConfiguration implements Serializable{
 	private String sHashValue;
 	private String sStatus;
 	private String sName;
-	
+	private String sStrategy;
 	public ServerConfiguration()
 	{
 		sAddress = "";
@@ -21,9 +21,10 @@ public class ServerConfiguration implements Serializable{
 		sHashValue = "";
 		sStatus = "";
 		sName = "";
+		sStrategy="";
 	}
 	
-	public ServerConfiguration(String address, int port, String upper, String lower, String HashValue, String status, String Name)
+	public ServerConfiguration(String address, int port, String upper, String lower, String HashValue, String status, String Name,String strategy)
 	{
 		sAddress = address;
 		nPort = port;
@@ -32,6 +33,7 @@ public class ServerConfiguration implements Serializable{
 		sHashValue = HashValue;
 		sStatus = status;
 		sName = Name;
+		sStrategy=strategy;
 	}
 	
 	public ServerConfiguration(IECSNode node)
@@ -46,6 +48,14 @@ public class ServerConfiguration implements Serializable{
 		sName = node.getNodeName();
 	}
 	
+	public void SetStrategy(String strategy)
+	{
+		sStrategy=strategy;
+	}
+	public String GetStrategy()
+	{
+		return sStrategy;
+	}
 	public void SetAddress(String address)
 	{
 		sAddress = address;

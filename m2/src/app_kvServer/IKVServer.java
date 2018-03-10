@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
+import common.ServerConfigurations;
+
 public interface IKVServer {
     public enum CacheStrategy {
         None,
@@ -77,8 +79,10 @@ public interface IKVServer {
 
     /**
      * Starts running the server
+     * @throws IOException 
+     * @throws NoSuchAlgorithmException 
      */
-    public void run();
+    public void run() throws NoSuchAlgorithmException, IOException;
 
     /**
      * Abruptly stop the server without any additional actions
@@ -116,12 +120,14 @@ public interface IKVServer {
      */
     public boolean moveData(String[] hashRange, String targetName) throws Exception;
 
-    public boolean initKVServer(HashMap metadata,int cacheSize, String replacementStrategy);
 
-	public void shutDown();
+
+	public void shutDown() throws Exception;
 
 
 	public void putNoCache(String key, String value) throws IOException, NoSuchAlgorithmException;
 
-	void update(byte[] metadata);
+	public void update() throws Exception;
+
+	public boolean initKVServer() throws NoSuchAlgorithmException, IOException;
 }
