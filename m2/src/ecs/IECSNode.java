@@ -26,8 +26,13 @@ public interface IECSNode {
     
     public void setNodeHashRange(String lowerB, String upperB);
     
-    public void setNodeHashValue(String value);
-    
     public String getNodeHashValue();
     
+    public void setNodeHashValue(String value);
+    
+    public String getNodeStatus();
+    
+    public void setNodeStatus(String status);
+    
+    public void printNodeInfo();
 }

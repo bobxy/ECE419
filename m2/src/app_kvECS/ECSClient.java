@@ -26,6 +26,8 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.*;
 
+import common.ServerConfiguration;
+
 import Utilities.Utilities;
 
 
@@ -50,6 +52,7 @@ public class ECSClient implements IECSClient {
 	private Collection<IECSNode> ECSNodeList;
 	private Collection<IECSNode> activeECSNodeList;
 	private Utilities uti;
+	public static int counter = 0;
 
 	public ECSClient(){
 		//establish zookeeper connection and return zookeeper object
@@ -87,20 +90,88 @@ public class ECSClient implements IECSClient {
 
     @Override
     public boolean start() {
-        // TODO
-        return false;
+      
+    	String path;
+    	
+    	for (IECSNode servNode:activeECSNodeList){
+    		 
+    		path = "/servers/" + servNode.getNodeName();
+    		
+    		ServerConfiguration servConfig = new ServerConfiguration(servNode);
+    		
+    		servConfig.SetStatus("SERVER_START");
+    		
+    		try {
+				byte[] data = uti.ServerConfigSerializableToByteArray(servConfig);
+				
+				zk.setData(path, data, (zk.exists(path, false).getVersion()));
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("cannot start servers");
+			}
+    		
+    	}
+        return true;
     }
 
     @Override
     public boolean stop() {
-        // TODO
-        return false;
+    	
+    	String path;
+    	
+    	for (IECSNode servNode:activeECSNodeList){
+    		 
+    		path = "/servers/" + servNode.getNodeName();
+    		
+    		ServerConfiguration servConfig = new ServerConfiguration(servNode);
+    		
+    		servConfig.SetStatus("SERVER_STOPPED");
+    		
+    		try {
+				byte[] data = uti.ServerConfigSerializableToByteArray(servConfig);
+				
+				zk.setData(path, data, (zk.exists(path, false).getVersion()));
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("cannot stop servers");
+			}
+    		
+    	}
+        return true;
     }
 
     @Override
     public boolean shutdown() {
-        // TODO
-        return false;
+    	String path;
+    	
+    	try {
+    		
+    		for (IECSNode servNode:activeECSNodeList)
+    		{
+    		 
+    			path = "/servers/" + servNode.getNodeName();
+    		
+				zk.setData(path, null, (zk.exists(path, false).getVersion()));
+				
+				zk.delete(path, (zk.exists(path, false).getVersion()));
+			} 
+    		
+    		zk.delete("/servers", zk.exists("/servers", false).getVersion());
+			
+			zk.setData("/actions", null, zk.exists("/actions", false).getVersion());
+			zk.delete("/actions",zk.exists("/actions", false).getVersion());
+			zk.close();
+    		counter = 0;
+    		}catch (KeeperException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.out.println("cannot shutdown servers");
+			} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.out.println("cannot shutdown servers");
+			}
+        return true;
     }
 
     @Override
@@ -124,19 +195,36 @@ public class ECSClient implements IECSClient {
     		e.printStackTrace();
     	}
     	
+   		 
+    	IECSNode servNode = ((ArrayList <IECSNode>)newNodes).get(0);
     	
-    	String path = "/servers/" + ((ArrayList <IECSNode>)newNodes).get(0).getNodeHost() + "/status";
+    	String path = "/servers/" + servNode.getNodeName();
+    		
+ 		ServerConfiguration servConfig = new ServerConfiguration(servNode);
+		
+		servConfig.SetStatus("SERVER_START");
+    		
+    	try {
+			byte[] data = uti.ServerConfigSerializableToByteArray(servConfig);
+				
+			zk.setData(path, data, (zk.exists(path, false).getVersion()));
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("cannot start server");
+			}
+    		   	
+    	//String path = "/servers/" + ((ArrayList <IECSNode>)newNodes).get(0).getNodeHost() + "/status";
     	
-    	byte[] data = "SERVER_START".getBytes();
+    	//byte[] data = "SERVER_START".getBytes();
     			
-    	zk.setData(path, data, zk.exists(path, false).getVersion());
+    	//zk.setData(path, data, zk.exists(path, false).getVersion());
     			
-        return ((ArrayList <IECSNode>)newNodes).get(0);
+        return servNode;
     }
 
     @Override
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) throws NoSuchAlgorithmException, KeeperException, InterruptedException, IOException {
-        
+       
     	//calls setupNodes
     	Collection<IECSNode> newNodes = new ArrayList<IECSNode>();
     	
@@ -159,20 +247,51 @@ public class ECSClient implements IECSClient {
     	
     	System.out.println("ssh done");
     		 	
-    	//calls awaitNodes
+    	if (counter == 0)
+    	{//calls awaitNodes
     	
-    	int timeout = 10000; //set timer in milliseconds
+    		int timeout = 10000; //set timer in milliseconds
     	
-    	boolean rdy = false;
+    		boolean rdy = false;
     	
-    	try {
-			rdy = awaitNodes(count,timeout);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+    		try {
+    			rdy = awaitNodes(count,timeout);
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
     	
-    	if (rdy)
-    		return newNodes;
+    		if (rdy){
+    			counter++;
+    			return newNodes;
+    		}
+    		
+    	}
+    	
+    	else 
+    	{
+    		String path;
+        	
+        	for (IECSNode servNode:newNodes){
+        		 
+        		path = "/servers/" + servNode.getNodeName();
+        		        		
+         		ServerConfiguration servConfig = new ServerConfiguration(servNode);
+        		
+        		servConfig.SetStatus("SERVER_START");
+        		
+        		try {
+    				byte[] data = uti.ServerConfigSerializableToByteArray(servConfig);
+    				
+    				zk.setData(path, data, (zk.exists(path, false).getVersion()));
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    				System.out.println("cannot start servers");
+    			}
+        		
+        	}
+        	
+        	return newNodes;
+    	}
     	
     	return null;
     }
@@ -242,15 +361,17 @@ public class ECSClient implements IECSClient {
     		
     		int rdyServCount=0;
     		
-    		for (IECSNode node:activeECSNodeList){
+    		for (IECSNode servNode:activeECSNodeList){
     			
-    			String path = "/servers/" + node.getNodeName() + "/status";
+    			String path = "/servers/" + servNode.getNodeName();
     			
     			byte[] temp = zk.getData(path, false, null);
+    			    			
+    			//String status = new String (temp,"UTF-8");
     			
-    			String status = new String (temp,"UTF-8");
+    			ServerConfiguration sc = uti.ServerConfigByteArrayToSerializable(temp);
     			
-    			if (!status.equals("none")){
+    			if (!(sc.GetStatus().equals("uninitialized"))){
     				rdyServCount++;
     			}
     		}
@@ -267,24 +388,107 @@ public class ECSClient implements IECSClient {
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) {
-        
-    	for (IECSNode node : activeECSNodeList){
-    		;
+        	
+    	// find the node to be removed
+    	// remove from active ECSNode List
+    	// add back to all available ECSNode List
+    	// set the status to none
+    	// update zk tree
+    	
+    	for (int i = nodeNames.size()-1; i>=0; i--){
+    		
+    		String name = ((ArrayList<String>)nodeNames).get(i);
+    		String nodeName;
+    		IECSNode servNode;
+    		
+    		for (int j=0; i<activeECSNodeList.size(); j++){
+    			
+    			servNode = ((ArrayList<IECSNode>)activeECSNodeList).get(j);
+    			nodeName = servNode.getNodeName();
+    			
+    			if (name.equals(nodeName)){
+    				
+    				ECSNodeList.add(servNode);
+    				
+    				((ArrayList<IECSNode>)activeECSNodeList).remove(j);
+    				
+    				String path = "/servers/" + nodeName;
+    				
+    				ServerConfiguration sc = new ServerConfiguration(servNode);
+    				
+    				sc.SetStatus("none");
+    				
+    				byte[] data;
+					try {
+						data = uti.ServerConfigSerializableToByteArray(sc);
+	    				zk.setData(path, data, zk.exists(path, false).getVersion());
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						System.out.println("cannot remove node");
+					}
+					
+					((ArrayList<String>)nodeNames).remove(i);
+					
+					break;
+    			}
+    		}
     	}
+    	
+    	if (nodeNames.size() == 0){
+    		System.out.println("Nodes removed successfully");
+    		return true;
+    	}
+    	
+    	System.out.println("The following server names cannot be found and removed");
+    	System.out.println(nodeNames);
     	
         return false;
     }
 
     @Override
     public Map<String, IECSNode> getNodes() {
-        // TODO
-        return null;
+        
+    	//traverse activeECSNode List
+    	//create map entry for each node
+    	
+    	Map <String, IECSNode> nodeMap = new HashMap<String,IECSNode>();
+    	
+    	for (IECSNode servNode: activeECSNodeList){
+    		
+    		nodeMap.put(servNode.getNodeName(), servNode);
+    		
+    	}
+        return nodeMap;
     }
 
     @Override
     public IECSNode getNodeByKey(String Key) {
-        // TODO
-        return null;
+        
+    	//convert key into hash
+    	//traverse activeECSNode List
+    	//continue if keyHash is greated than serverHash
+    	
+    	try {
+    		
+			String keyHash = uti.cHash(Key);
+			
+	    	for (IECSNode servNode: activeECSNodeList){
+	    		
+	    		if (keyHash.compareTo(servNode.getNodeHashValue())<=0){
+	    			return servNode;
+	    		}
+	    	}
+	    	
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			System.out.println("cannot convert key into hash");
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			System.out.println("cannot convert key into hash");
+		}
+    	
+    	return ((ArrayList<IECSNode>)activeECSNodeList).get(0);   	
     }
     
     public void run(){
@@ -321,30 +525,48 @@ public class ECSClient implements IECSClient {
     				}
     				else if(sAction.equals(ADDNODES))
     				{
-    					Collection<IECSNode> ECSNodes_group;
+    					Collection<IECSNode> newNodesList;
     					
     					int numNodes = Integer.parseInt(sElements[1]);
     					String cacheStrgy = sElements[2];
     					int cacheSze = Integer.parseInt(sElements[3]);
     				
     					//write set ECSNodes function
-    					ECSNodes_group = addNodes(numNodes,cacheStrgy,cacheSze);
+    					newNodesList = addNodes(numNodes,cacheStrgy,cacheSze);
     					
-    					if (ECSNodes_group != null)
+    					if (newNodesList != null){
     						System.out.println("nodes added successfully");
+    						System.out.println("Following nodes are active: ");
+    						
+    						for (IECSNode servNode:activeECSNodeList){
+    							servNode.printNodeInfo();
+    						}
+
+    					}
     					else
     						System.out.println("Add nodes failed");
-    					//what to do with it
     				}
     				else if(sAction.equals(ADDNODE))
     				{
-    					IECSNode nodeServer;
+    					IECSNode newNode;
     					String cacheStrgy = sElements[1];
     					int cacheSze = Integer.parseInt(sElements[2]);
     					
-    					nodeServer = addNode(cacheStrgy,cacheSze);
+    					newNode = addNode(cacheStrgy,cacheSze);
     					
-    					//what to do with it
+    					if (newNode != null){
+    						
+    						System.out.println("node added successfully");
+    						System.out.println("Following nodes are active: ");
+    						
+    						for (IECSNode servNode:activeECSNodeList){
+    							servNode.printNodeInfo();
+    						}
+
+    					}
+    					else 
+    						System.out.println("add single node failed");
+    					
     				}
     				else if(sAction.equals(REMOVENODE))
     				{
@@ -358,24 +580,30 @@ public class ECSClient implements IECSClient {
     					boolean removed = removeNodes(nodeNames);
     					
     					if (removed)
-    						System.out.println("Successfully removed");
+    						System.out.println("nodes successfully removed");
     					else
-    						System.out.println("Can not remove nodes");
+    						System.out.println("cannot remove nodes");
     						
-    					//what to do with it?
     				}
     				else if (sAction.equals(GETNODES))
     				{
     					Map <String, IECSNode> nodeMap = getNodes();
-    					//what to do with it?
+    					
+    					System.out.println("'get nodes successful");
+    					
+    					System.out.println(nodeMap);
+    					
     				}
     				else if (sAction.equals(GETNODE))
     				{
     					String sKey = sElements[1];
     					
-    					IECSNode nodeServer = getNodeByKey(sKey);
+    					IECSNode servNode = getNodeByKey(sKey);
     					
-    					//what to do with it?
+    					System.out.println("get node by key successful");
+    					
+    					servNode.printNodeInfo();
+    					
     				}
     				else if(sAction.equals(SHUTDOWN))
     				{
@@ -463,7 +691,7 @@ public class ECSClient implements IECSClient {
     	System.out.println("Please follow the following formats for the instructions");
     	System.out.println(ADDNODES + " <number of nodes>"  + " <replacement strategy>" + " <size of cache>");
     	System.out.println(ADDNODE + " <replacement strategy>" + " <size of cache>");
-    	System.out.println(REMOVENODE + " node name 1" + " node name 2" + " ...");
+    	System.out.println(REMOVENODE + " <node name 1>" + " <node name 2>" + " ...");
     	System.out.println(GETNODE + " <key>");
     	System.out.println(START);
     	System.out.println(STOP);
@@ -545,53 +773,48 @@ public class ECSClient implements IECSClient {
     public void updateMetaData() throws KeeperException, InterruptedException{
     	//create znode and metadata
     	
-    	IECSNode servNode;
     	
     	//create zookeeper znode
-    	for (int i=0;i<activeECSNodeList.size(); i++){
+    	for (IECSNode servNode:activeECSNodeList){
     		
     		System.out.println("UMD0");
-    		servNode = ((ArrayList<IECSNode>) activeECSNodeList).get(i);
+    	
+    		String path = "/servers/" + servNode.getNodeName();
     		
-    		String servName = servNode.getNodeName();
-    		String servAddr = servNode.getNodeHost();
-    		String servPort = Integer.toString(servNode.getNodePort());
-    		String[] servHashR = servNode.getNodeHashRange();
-    		
-    		//check if znode already exist and modify
-    		String path = "/servers/" + servName;
-    		String addrPath = path + "/addr";
-			String portPath = path + "/port";
-			String hRangePath = path + "/range";
-			String statusPath = path + "/status";
+     		ServerConfiguration servConfig = new ServerConfiguration(servNode);
+    		  		
+    		byte[] data;
 			
-			byte[] nameData = servName.getBytes();
-			byte[] addrData = servAddr.getBytes();
-			byte[] portData = servPort.getBytes();
-			byte[] hRangeData = (servHashR[0] + servHashR[1]).getBytes();
-			byte[] statusData = "none".getBytes();
-			
-			System.out.println("UMD1");
+    		try {
+				data = uti.ServerConfigSerializableToByteArray(servConfig);
+				
+				if (zk.exists(path, true) != null){
+	    			 
+	    			System.out.println("exist0");
+	    			zk.setData(path, data, zk.exists(path, true).getVersion());
+	    			System.out.println("exist1");
+	    		}
+	    		
+	    		//else doesn't exist create new znode
+	    		else{
+				
+	    			zk.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//zk.create(addrPath, addrData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//zk.create(portPath, portData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//zk.create(hRangePath, hRangeData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//zk.create(statusPath, statusData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	    			//set watcher on status??
+	    		}
+	    		System.out.println("UMD1");
+			} catch (Exception e) {
+				
+				e.printStackTrace();
+				System.out.println("failed to serialize server configuration");
+			}
+    			
+			System.out.println("UMD2");
     		
-    		if (zk.exists(path, true) != null){
-    			 
-    			System.out.println("exist0");
-    			//if server already exist, only need to update hash range
-    			zk.setData(hRangePath, hRangeData, zk.exists(hRangePath, true).getVersion());
-    			System.out.println("exist1");
-    		}
     		
-    		//else doesn't exist create new znode
-    		else{
-			
-    			zk.create(path, nameData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			zk.create(addrPath, addrData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			zk.create(portPath, portData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			zk.create(hRangePath, hRangeData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			zk.create(statusPath, statusData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    			//set watcher on status??
-    		}
-    		System.out.println("UMD2");
     	}
     }
     

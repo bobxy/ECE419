@@ -109,28 +109,20 @@ public class Utilities {
 	//consistent hashing; return hex string
 	public String cHash(String key) throws UnsupportedEncodingException, NoSuchAlgorithmException{
 		
-
-		String res="";
 		byte[] temp = key.getBytes("UTF-8");
 		
 		MessageDigest md = MessageDigest.getInstance("MD5");
 		
 		byte [] hash = md.digest(temp);
 		
-		res=byteArrayToHex(hash);
-
-		return res;
-	}
-	
-	public String byteArrayToHex (byte[] myByteArray){
+		StringBuilder sb = new StringBuilder(hash.length*2);
 		
-		StringBuilder sb = new StringBuilder(myByteArray.length*2);
-		
-		for (byte b:myByteArray){
+		for (byte b:hash){
 			sb.append(String.format("%02x", b));
 		}
 		
 		return sb.toString();
+
 	}
 
 	public byte[] SerializableToByteArray(ServerConfigurations sc) throws Exception

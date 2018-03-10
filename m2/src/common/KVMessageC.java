@@ -1,7 +1,8 @@
 package common;
 
-import common.KVMessage;
+import common.*;
 import common.KVMessage.StatusType;
+import ecs.ECSNode;
 import ecs.IECSNode;
 
 public class KVMessageC implements KVMessage{
@@ -51,6 +52,15 @@ public class KVMessageC implements KVMessage{
 	@Override
 	public IECSNode getResponsibleServer()
 	{
+		try
+		{
+			ServerConfigurations sc = new ServerConfigurations();
+			return new ECSNode(sc.FindServerForKey(key));
+		}
+		catch(Exception e)
+		{
+			System.out.println("Client> " + "Error! " + "KVMessageC::getResponsibleServer");
+		}
 		return null;
 	}
 }

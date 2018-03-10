@@ -1,6 +1,7 @@
 package ecs;
 
 import java.util.Comparator;
+import common.ServerConfiguration;
 
 public class ECSNode implements IECSNode{
 	
@@ -9,6 +10,7 @@ public class ECSNode implements IECSNode{
 	private int servPort;
 	private String[] servHashR;
 	private String servHashV;
+	private String servStatus;
 
 	public ECSNode(String name, String address, int port) {
 		// TODO Auto-generated constructor stub
@@ -16,8 +18,20 @@ public class ECSNode implements IECSNode{
 		servAddr = address;
 		servPort = port;
 		servHashR = new String[2];
+		servHashV ="";
+		servStatus = "uninitialized";
 	}
 	
+	public ECSNode(ServerConfiguration config)
+	{
+		servName = config.GetName();
+		servAddr = config.GetAddress();
+		servPort = config.GetPort();
+		servHashR = new String[2];
+		servHashR[0] = config.GetLower();
+		servHashR[1] = config.GetUpper();
+		servStatus = config.GetStatus();
+	}
 	   /**
      * @return  the name of the node (ie "Server 8.8.8.8")
      */
@@ -45,7 +59,7 @@ public class ECSNode implements IECSNode{
     public String[] getNodeHashRange(){
     	return servHashR;
     }
-    
+   
     public void setNodeHashRange(String lowerB, String upperB){
     	servHashR[0]=lowerB;
     	servHashR[1]=upperB;
@@ -57,5 +71,17 @@ public class ECSNode implements IECSNode{
     
     public void setNodeHashValue(String value){
     	servHashV = value;
+    }
+    
+    public String getNodeStatus(){
+    	return servStatus;
+    }
+    
+    public void setNodeStatus(String status){
+    	servStatus = status;
+    }
+
+    public void printNodeInfo(){
+    	System.out.println(servName + " " + Integer.toString(servPort) + " " + servAddr + " lowerb:" + servHashR[0] + " upperb:" + servHashR[1] + " hash:" + servHashV + " " + servStatus);
     }
 }
