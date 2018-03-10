@@ -18,6 +18,7 @@ public class ECSNode implements IECSNode{
 		servAddr = address;
 		servPort = port;
 		servHashR = new String[2];
+		servHashV ="";
 		servStatus = "uninitialized";
 	}
 	
@@ -80,4 +81,7 @@ public class ECSNode implements IECSNode{
     	servStatus = status;
     }
 
+    public void printNodeInfo(){
+    	System.out.println(servName + " " + Integer.toString(servPort) + " " + servAddr + " lowerb:" + servHashR[0] + " upperb:" + servHashR[1] + " hash:" + servHashV + " " + servStatus);
+    }
 }

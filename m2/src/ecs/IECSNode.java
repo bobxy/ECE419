@@ -34,4 +34,5 @@ public interface IECSNode {
     
     public void setNodeStatus(String status);
     
+    public void printNodeInfo();
 }

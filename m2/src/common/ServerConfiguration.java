@@ -34,7 +34,7 @@ public class ServerConfiguration implements Serializable{
 		sName = Name;
 	}
 	
-	public ServerConfiguration(ECSNode node)
+	public ServerConfiguration(IECSNode node)
 	{
 		sAddress = node.getNodeHost();
 		nPort = node.getNodePort();
@@ -119,8 +119,8 @@ public class ServerConfiguration implements Serializable{
 	public Boolean IsResponsible(String sHashValue)
 	{
 		if(sUpper.compareTo(sLower) > 0)
-			return (sLower.compareTo(sHashValue) < 0) && (sUpper.compareTo(sHashValue) > 0);
+			return (sLower.compareTo(sHashValue) < 0) && (sUpper.compareTo(sHashValue) >= 0);
 		else
-			return (sLower.compareTo(sHashValue) < 0) || (sUpper.compareTo(sHashValue) > 0);
+			return (sLower.compareTo(sHashValue) < 0) || (sUpper.compareTo(sHashValue) >= 0);
 	}
 }
