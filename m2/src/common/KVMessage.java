@@ -20,7 +20,10 @@ public interface KVMessage {
 		SERVER_NOT_RESPONSIBLE,  /* Request not successful, server not responsible for key 11*/
 		
 		REQUEST_SERVER_CONFIGURATIONS,
-		PUT_WITHOUT_CACHING
+		PUT_WITHOUT_CACHING,
+		MOVE_DATA_START,
+		MOVE_DATA_END,
+		SERVER_RECEIVED
 	}
 
 	/**

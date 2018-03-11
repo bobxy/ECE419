@@ -314,4 +314,42 @@ public class KVStore extends Thread implements KVCommInterface {
 			return false;
 		}
 	}
+	
+	public KVMessage MoveDataStart() throws Exception
+	{
+		try {
+			String msg = util.StatusCodeToString(StatusType.MOVE_DATA_START);
+			stream.sendMessage(new TextMessage(msg));
+		} catch (IOException e) {
+			logger.error("Client> " + "Error! " + "Unable to send message!");
+			disconnect();
+		}
+		while (true) {
+			Thread.sleep(1);
+			if (bReceived) {
+				bReceived = false;
+				break;
+			}
+		}
+		return kvmsg;
+	}
+	
+	public KVMessage MoveDataEnd() throws Exception
+	{
+		try {
+			String msg = util.StatusCodeToString(StatusType.MOVE_DATA_END);
+			stream.sendMessage(new TextMessage(msg));
+		} catch (IOException e) {
+			logger.error("Client> " + "Error! " + "Unable to send message!");
+			disconnect();
+		}
+		while (true) {
+			Thread.sleep(1);
+			if (bReceived) {
+				bReceived = false;
+				break;
+			}
+		}
+		return kvmsg;
+	}
 }

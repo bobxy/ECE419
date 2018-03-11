@@ -41,12 +41,15 @@ public class KVMessageC implements KVMessage{
 		String sStatus = splited[0];
 		int nStatusLength = sStatus.length();
 		status = StatusType.values()[Integer.parseInt(sStatus)];
-		key = splited[1];
-		int nKeyLength = key.length();
-		if(2 + nKeyLength + nStatusLength >= str.length())														//e.g 0 key value 
-			value = "";
-		else
-			value = str.substring(2 + nKeyLength + nStatusLength);
+		if(splited.length > 1)
+		{
+			key = splited[1];
+			int nKeyLength = key.length();
+			if(2 + nKeyLength + nStatusLength >= str.length())														//e.g 0 key value 
+				value = "";
+			else
+				value = str.substring(2 + nKeyLength + nStatusLength);
+		}
 	}
 
 	@Override

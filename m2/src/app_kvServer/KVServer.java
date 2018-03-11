@@ -54,6 +54,8 @@ public class KVServer implements IKVServer {
 	private ServerConfigurations SVCs;
 	private Utilities myutilities;
 	private String ServerMD5Hash;
+	private boolean bReceivingData;
+	
 	public KVServer(String name, String zkHostname, int zkPort) throws Exception {
 		sHostname = name;
 		sZKHostname = zkHostname;
@@ -63,7 +65,7 @@ public class KVServer implements IKVServer {
 		WriteLockFlag=false;
 		myutilities = new Utilities();
 		ServerMD5Hash="";
-		
+		bReceivingData = false;
 		update();
 		
 	}
@@ -345,7 +347,7 @@ public class KVServer implements IKVServer {
 			String mypath="/servers/"+child;
 			byte[] temp=zk.getData(mypath, true, zk.exists(mypath, true));
 			ServerConfiguration svc= myutilities.ServerConfigByteArrayToSerializable(temp);
-			if(svc.GetName()==sHostname)
+			if(sHostname.equals(svc.GetName()))
 			{
 				ServerMD5Hash=svc.GetHashValue();
 			}
@@ -359,5 +361,33 @@ public class KVServer implements IKVServer {
     public void putNoCache(String key,String value) throws IOException, NoSuchAlgorithmException
     {
     	DO.put(key,value);
+    }
+    
+    public ServerConfigurations GetServerConfigurations()
+    {
+    	return SVCs;
+    }
+    
+    public boolean IsResponsible(String sHash) throws Exception
+    {
+    	if(SVCs == null || SVCs.IsEmpty())
+    		return false;
+    	else
+    		return ServerMD5Hash.equals(SVCs.FindServerForKey(sHash).GetHashValue());
+    }
+    
+    public boolean IsLocked()
+    {
+    	return WriteLockFlag;
+    }
+    
+    public boolean IsAcceptingRequest()
+    {
+    	return HandleClientRequest;
+    }
+    
+    public void ReceivingData(boolean receivingData)
+    {
+    	
     }
 }

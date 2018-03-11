@@ -10,7 +10,7 @@ import common.KVMessage.StatusType;
 import common.KVMessageC;
 import Utilities.Utilities;
 import org.apache.log4j.*;
-
+import client.KVStore;
 
 /**
  * Represents a connection end point for a particular client that is 
@@ -55,64 +55,107 @@ public class ClientConnection implements Runnable {
 				KVMessageC message = new KVMessageC();
 				try {
 					TextMessage latestMsg = receiveMessage();
-					
-					if (latestMsg.getMsg().equals("")){
-						sendMessage(new TextMessage(latestMsg.getMsg()));
+					if(kvs.IsAcceptingRequest())
+					{
+						if (latestMsg.getMsg().equals("")){
+							sendMessage(new TextMessage(latestMsg.getMsg()));
+						}
+						else
+						{
+							message.StrToKVM(latestMsg.getMsg());
+							String sKey = message.getKey();
+							String sValue = message.getValue();
+							String sKeyHash = util.cHash(sKey);
+							if(sValue.equals("null"))
+								sValue = "";
+							String sRet = "";
+							if(message.getStatus() == StatusType.PUT)
+							{
+								if(!kvs.IsLocked())
+								{
+									if(kvs.IsResponsible(sKeyHash))
+									{
+										if(util.InvaildKey(sKey))
+								    	{
+											sRet = "6 " +  sKey + " " + sValue;
+								    	}
+										else
+										{
+											boolean bOld = kvs.inStorage(sKey);
+											boolean bDelete = (sValue.length() == 0);
+											if(!bOld && bDelete)
+												sRet = "8 " + sKey;
+											else
+											{
+												kvs.putKV(sKey, sValue);
+												int nStatus = -1;
+												if(bOld && bDelete)
+													nStatus = 7;
+												else if(bOld && !bDelete)
+													nStatus = 5;
+												else
+													nStatus = 4;
+												sRet = Integer.toString(nStatus) + " " + sKey + " " + sValue;
+											}
+										}
+									}
+									else
+										sRet = util.StatusCodeToString(StatusType.SERVER_NOT_RESPONSIBLE) + " " + sKey + " " + sValue;
+								}
+								else
+								{
+									sRet = util.StatusCodeToString(StatusType.SERVER_WRITE_LOCK) + " " + sKey + " " + sValue;
+								}
+									
+							}
+							else if(message.getStatus() == StatusType.GET)
+							{
+								if(kvs.IsResponsible(sKeyHash))
+								{
+									if(util.InvaildKey(sKey))
+										sRet = "1 " +  sKey;
+									else
+									{
+										sValue = kvs.getKV(sKey);
+										if(sValue.length() == 0)
+											sRet = "1 " + sKey;
+										else
+											sRet = "2 " + sKey + " " + sValue;
+									}
+								}
+								else
+									sRet = util.StatusCodeToString(StatusType.SERVER_NOT_RESPONSIBLE) + " " + sKey + " " + sValue;
+							}
+							else if(message.getStatus() == StatusType.PUT_WITHOUT_CACHING)
+							{
+								kvs.putNoCache(sKey, sValue);
+								sRet = util.StatusCodeToString(StatusType.PUT_SUCCESS) + " " + sKey + " " + sValue;
+							}
+							else if(message.getStatus() == StatusType.REQUEST_SERVER_CONFIGURATIONS)
+							{
+								TextMessage txt = new TextMessage(util.SerializableToByteArray(kvs.GetServerConfigurations()));
+								sRet = txt.getMsg();
+							}
+							else if(message.getStatus() == StatusType.MOVE_DATA_START)
+							{
+								kvs.ReceivingData(true);
+								sRet = util.StatusCodeToString(StatusType.SERVER_RECEIVED);
+							}
+							else if(message.getStatus() == StatusType.MOVE_DATA_END)
+							{
+								kvs.ReceivingData(false);
+								sRet = util.StatusCodeToString(StatusType.SERVER_RECEIVED);
+							}
+							sendMessage(new TextMessage(sRet));
+					/* connection either terminated by the client or lost due to 
+					 * network problems*/	
+						}
 					}
 					else
 					{
-						message.StrToKVM(latestMsg.getMsg());
-						String sKey = message.getKey();
-						String sValue = message.getValue();
-						if(sValue.equals("null"))
-							sValue = "";
-						String sRet = "";
-						if(message.getStatus() == StatusType.PUT)
-						{
-							if(util.InvaildKey(sKey))
-					    	{
-								sRet = "6 " +  sKey + " " + sValue;
-					    	}
-							else
-							{
-								boolean bOld = kvs.inStorage(sKey);
-								boolean bDelete = (sValue.length() == 0);
-								if(!bOld && bDelete)
-									sRet = "8 " + sKey;
-								else
-								{
-									kvs.putKV(sKey, sValue);
-									int nStatus = -1;
-									if(bOld && bDelete)
-										nStatus = 7;
-									else if(bOld && !bDelete)
-										nStatus = 5;
-									else
-										nStatus = 4;
-									sRet = Integer.toString(nStatus) + " " + sKey + " " + sValue;
-								}
-							}
-								
-						}
-						else if(message.getStatus() == StatusType.GET)
-						{
-							if(util.InvaildKey(sKey))
-								sRet = "1 " +  sKey;
-							else
-							{
-								sValue = kvs.getKV(sKey);
-								if(sValue.length() == 0)
-									sRet = "1 " + sKey;
-								else
-									sRet = "2 " + sKey + " " + sValue;
-							}
-						}
-						
-						
+						String sRet = util.StatusCodeToString(StatusType.SERVER_STOPPED);
 						sendMessage(new TextMessage(sRet));
-				/* connection either terminated by the client or lost due to 
-				 * network problems*/	
-					} 
+					}
 				}catch (IOException ioe) {
 					logger.error("Error! Connection lost!");
 					isOpen = false;
