@@ -108,9 +108,9 @@ public class ServerConfiguration implements Serializable{
 		sHashValue = HashValue;
 	}
 	
-	public void SetStatus(String status)
+	public void SetStatus(Utilities.servStatus status)
 	{
-		if (status.equals("added")){
+		/*if (status.equals("added")){
     		sStatus = Utilities.servStatus.added;
     	}
     	else if (status.equals("adding")){
@@ -142,7 +142,8 @@ public class ServerConfiguration implements Serializable{
     	}
     	else if (status.equals("none")){
     		sStatus = Utilities.servStatus.none;
-    	}  	
+    	} */
+		sStatus=status;
 	}
 	
 	public void SetName(String Name)

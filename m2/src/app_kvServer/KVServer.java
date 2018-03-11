@@ -15,7 +15,9 @@ import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.Watcher.Event;
 
 import common.ServerConfiguration;
 import common.ServerConfigurations;
@@ -57,7 +59,8 @@ public class KVServer implements IKVServer {
 	private String ServerMD5Hash;
 	private boolean bReceivingData;
 	private boolean bShouldBeRemoved;
-	
+	private String ServerPath;
+	private ServerConfiguration currentSVC;
 	public KVServer(String name, String zkHostname, int zkPort) throws Exception {
 		sHostname = name;
 		sZKHostname = zkHostname;
@@ -69,6 +72,10 @@ public class KVServer implements IKVServer {
 		ServerMD5Hash="";
 		bReceivingData = false;
 		bShouldBeRemoved = false;
+		
+		ServerPath="";
+		zkC= new ZKConnection();
+		zk = zkC.connect(sZKHostname+":"+nZKPort);
 		update();
 		
 	}
@@ -271,7 +278,6 @@ public class KVServer implements IKVServer {
 		// TODO
 		//Starts the KVServer, all client requests and all ECS requests are processed.
 		HandleClientRequest=true;
-
 	}
 
     @Override
@@ -289,11 +295,29 @@ public class KVServer implements IKVServer {
     	ServerConfiguration tempSV=SVCs.FindNextHigher(ServerMD5Hash);
     	//send to tempSV
     	String[] hashRange=new String[2];
-    	hashRange[0]=tempSV.GetLower();
-    	hashRange[1]=tempSV.GetUpper();
+    	hashRange[0]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetLower();
+    	hashRange[1]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetUpper();
     	boolean finished=moveData(hashRange,tempSV.GetHashValue());
+
     	
     	
+    }
+    
+    public void remove()
+    {
+
+    	try {
+        	ServerConfiguration tempSV=SVCs.FindNextHigher(ServerMD5Hash);
+        	//send to tempSV
+        	String[] hashRange=new String[2];
+        	hashRange[0]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetLower();
+        	hashRange[1]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetUpper();
+			boolean finished=moveData(hashRange,tempSV.GetHashValue());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
     }
     @Override
     public void lockWrite() {
@@ -322,7 +346,7 @@ public class KVServer implements IKVServer {
     	String TargetHostname=tempSVC.GetAddress();
     	int TargetPort=tempSVC.GetPort();
     	ServerKVStore = new KVStore(TargetHostname,TargetPort);
-    	
+    	ServerKVStore.MoveDataStart();
     	// find all key value pairs fall into this range
     	String lowerbound=hashRange[0];
     	String upperbound=hashRange[1];
@@ -334,7 +358,7 @@ public class KVServer implements IKVServer {
     	}
     	
     	ListToMove.clear();
-    	
+    	ServerKVStore.MoveDataEnd();
 		return true;
 	}
     
@@ -342,8 +366,6 @@ public class KVServer implements IKVServer {
     public void update() throws Exception {
     	//Update the metadata repository of this server
 		ServerConfigurations res=new ServerConfigurations();
-		zkC= new ZKConnection();
-		zk = zkC.connect(sZKHostname+":"+nZKPort);
 
 		List<String> childrenList=zk.getChildren("/servers/", true);
 		for(String child: childrenList)
@@ -353,7 +375,9 @@ public class KVServer implements IKVServer {
 			ServerConfiguration svc= myutilities.ServerConfigByteArrayToSerializable(temp);
 			if(sHostname.equals(svc.GetName()))
 			{
+				ServerPath=mypath;
 				ServerMD5Hash=svc.GetHashValue();
+				currentSVC=svc;
 			}
 			res.AddServer(svc);
 		}
@@ -390,12 +414,83 @@ public class KVServer implements IKVServer {
     	return HandleClientRequest;
     }
     
-    public void ReceivingData(boolean receivingData)
+    public void ReceivingData(boolean receivingData) throws Exception
     {
+
     	bReceivingData = receivingData;
     	if(!receivingData && bShouldBeRemoved)
     	{
     		//Move data to next server. Do whatever
+    		shutDown();
     	}
+    }
+    
+    public void process(WatchedEvent event) throws Exception, InterruptedException {
+  	  String path = event.getPath();
+  	  byte[] znodeVal;
+       /*if (event.getState() == KeeperState.SyncConnected) {
+          connectedSignal.countDown();
+       }
+       */
+       
+       if(event.getType() == Event.EventType.None)
+       {
+      	 //we are being told that the state of the connection has changed
+      	 switch(event.getState())
+      	 {
+      	 	case SyncConnected:
+      	 		break;
+      	 	case Expired:
+      	 		break;
+      	 }
+       }
+       else
+       {
+      		 //Something has changed on the node
+      			 if(path.contains(sHostname))
+      			 {
+      				 znodeVal=zk.getData(path, true,zk.exists(path, true));
+      				 Utilities.servStatus status = myutilities.ServerConfigByteArrayToSerializable(znodeVal).GetStatus();
+      				 switch(status)
+      				 {
+      				 	case adding:
+      				 		this.initKVServer();
+      				 		this.run();
+      				 		currentSVC.SetStatus(Utilities.servStatus.added);
+      				 		
+      				 		//byte[] newZnodeVal=myutilities.ServerConfigSerializableToByteArray(sc)
+      				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
+      				 		break;
+      				 	case starting:
+      				 		this.start();
+      				 		currentSVC.SetStatus(Utilities.servStatus.started);
+      				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
+      				 		break;
+      				 	case stopping:
+      				 		this.stop();
+      				 		currentSVC.SetStatus(Utilities.servStatus.stopped);
+      				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
+      				 		break;
+      				 	case removing:
+      				 		this.remove();
+      				 		this.close();
+      				 		currentSVC.SetStatus(Utilities.servStatus.removed);
+      				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
+      				 		break;
+      				 	case exiting:
+      				 		this.close();
+      				 		currentSVC.SetStatus(Utilities.servStatus.exited);
+      				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
+      				 		break;
+      				 	case sending:
+      				 		//move data to 
+      				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
+      				 		break;
+      				 	default:
+      				 		System.out.println("KVServer process invalid: "+status.toString());
+      				 		
+      				 }
+      			 }
+       }
     }
 }
