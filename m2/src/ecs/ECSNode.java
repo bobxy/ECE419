@@ -1,6 +1,8 @@
 package ecs;
 
 import java.util.Comparator;
+
+import Utilities.Utilities;
 import common.ServerConfiguration;
 
 public class ECSNode implements IECSNode{
@@ -10,7 +12,10 @@ public class ECSNode implements IECSNode{
 	private int servPort;
 	private String[] servHashR;
 	private String servHashV;
-	private String servStatus;
+	private int servCacheSize;
+	Utilities.servStatus servStatus;
+	Utilities.servStrategy servStrategy;
+    
 
 	public ECSNode(String name, String address, int port) {
 		// TODO Auto-generated constructor stub
@@ -19,7 +24,9 @@ public class ECSNode implements IECSNode{
 		servPort = port;
 		servHashR = new String[2];
 		servHashV ="";
-		servStatus = "uninitialized";
+		servCacheSize = -1;
+		servStatus = Utilities.servStatus.none;
+		servStrategy = Utilities.servStrategy.none;
 	}
 	
 	public ECSNode(ServerConfiguration config)
@@ -31,6 +38,8 @@ public class ECSNode implements IECSNode{
 		servHashR[0] = config.GetLower();
 		servHashR[1] = config.GetUpper();
 		servStatus = config.GetStatus();
+		servCacheSize = config.GetCacheSize();
+		servStrategy = config.GetStrategy();
 	}
 	   /**
      * @return  the name of the node (ie "Server 8.8.8.8")
@@ -59,6 +68,7 @@ public class ECSNode implements IECSNode{
     public String[] getNodeHashRange(){
     	return servHashR;
     }
+    
    
     public void setNodeHashRange(String lowerB, String upperB){
     	servHashR[0]=lowerB;
@@ -73,12 +83,74 @@ public class ECSNode implements IECSNode{
     	servHashV = value;
     }
     
-    public String getNodeStatus(){
+    public Utilities.servStatus getNodeStatus(){
     	return servStatus;
     }
     
     public void setNodeStatus(String status){
-    	servStatus = status;
+    	
+    	if (status.equals("added")){
+    		servStatus = Utilities.servStatus.added;
+    	}
+    	else if (status.equals("adding")){
+    		servStatus = Utilities.servStatus.adding;
+    	}
+    	else if (status.equals("removed")){
+    		servStatus = Utilities.servStatus.removed;
+    	}
+    	else if (status.equals("removing")){
+    		servStatus = Utilities.servStatus.removing;
+    	}
+    	else if (status.equals("started")){
+    		servStatus = Utilities.servStatus.started;
+    	}
+    	else if (status.equals("starting")){
+    		servStatus = Utilities.servStatus.starting;
+    	}
+    	else if (status.equals("stopped")){
+    		servStatus = Utilities.servStatus.stopped;
+    	}
+    	else if (status.equals("stopping")){
+    		servStatus = Utilities.servStatus.stopping;
+    	}
+    	else if (status.equals("receiving")){
+    		servStatus = Utilities.servStatus.receiving;
+    	}
+    	else if (status.equals("sending")){
+    		servStatus = Utilities.servStatus.sending;
+    	}
+    	else if (status.equals("none")){
+    		servStatus = Utilities.servStatus.none;
+    	}  	
+    }
+    
+    public int getNodeCacheSize(){
+    	return servCacheSize;
+    }
+    
+    public void setNodeCacheSize(int cacheSize){
+    	servCacheSize = cacheSize;
+    }
+    
+    public Utilities.servStrategy getNodeStrategy(){
+    	return servStrategy;
+    }
+    
+    public void setNodeStrategy(String cacheStrategy){
+    	
+    	if (cacheStrategy.equals("FIFO")){
+    		servStrategy = Utilities.servStrategy.FIFO;
+    	}
+    	else if (cacheStrategy.equals("LRU")){
+    		servStrategy = Utilities.servStrategy.LRU;
+    	}
+    	else if (cacheStrategy.equals("LFU")){
+    		servStrategy = Utilities.servStrategy.LFU;
+    	}
+    	else if (cacheStrategy.equals("none")){
+    		servStrategy = Utilities.servStrategy.none;
+    	} 
+    	
     }
 
     public void printNodeInfo(){

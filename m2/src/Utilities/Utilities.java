@@ -159,5 +159,25 @@ public class Utilities {
 		ObjectInput in = new ObjectInputStream(bis);
 		return (ServerConfiguration)in.readObject();
 	}
+	
+	public enum servStatus {
+		added,
+		adding,
+		removed,
+		removing,
+		started,
+		starting,
+		stopped,
+		stopping,
+		receiving,
+		sending,
+		none
+	}
+	public enum servStrategy {
+        none,
+        LRU,
+        LFU,
+        FIFO
+    };
 
 }
