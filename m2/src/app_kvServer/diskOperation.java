@@ -148,15 +148,52 @@ public class diskOperation {
 	public ArrayList<KeyValuePair> get_subset(String lowerbound,String upperbound) throws IOException
 	{
 		ArrayList<KeyValuePair> res= new ArrayList<KeyValuePair>();
-		MD5Set.subSet(lowerbound, upperbound);
-		while(!MD5Set.isEmpty())
+		if(lowerbound.compareTo(upperbound)>0)
 		{
-			String tempHash=MD5Set.first();
-			String tempKey=HashKey.get(tempHash);
-			String tempValue=get(tempKey);
-			KeyValuePair tempPair=new KeyValuePair(tempKey,tempValue);
-			res.add(tempPair);
-			MD5Set.remove(tempHash);
+			String zero="";
+			String FF="";
+			for(int i=0;i<32;i++)
+			{
+				zero+="0";
+				FF+="F";
+			}
+			SortedSet<String> temp=MD5Set.subSet(zero, upperbound);
+			SortedSet<String> temp1=MD5Set.subSet(lowerbound, FF);
+			
+			while(!temp.isEmpty())
+			{
+				String tempHash=temp.first();
+				String tempKey=HashKey.get(tempHash);
+				String tempValue=get(tempKey);
+				KeyValuePair tempPair=new KeyValuePair(tempKey,tempValue);
+				res.add(tempPair);
+				MD5Set.remove(tempHash);
+				temp.remove(tempHash);
+			}
+			while(!temp1.isEmpty())
+			{
+				String tempHash=temp1.first();
+				String tempKey=HashKey.get(tempHash);
+				String tempValue=get(tempKey);
+				KeyValuePair tempPair=new KeyValuePair(tempKey,tempValue);
+				res.add(tempPair);
+				MD5Set.remove(tempHash);
+				temp1.remove(tempHash);
+			}
+			
+		}
+		else
+		{
+			SortedSet<String> temp=MD5Set.subSet(lowerbound, upperbound);
+			while(!temp.isEmpty())
+			{
+				String tempHash=temp.first();
+				String tempKey=HashKey.get(tempHash);
+				String tempValue=get(tempKey);
+				KeyValuePair tempPair=new KeyValuePair(tempKey,tempValue);
+				res.add(tempPair);
+				MD5Set.remove(tempHash);
+			}
 		}
 		return res;
 	}

@@ -56,7 +56,7 @@ public class KVServer implements IKVServer, Runnable {
 	private ZooKeeper zk;
 	private ServerConfigurations SVCs;
 	private Utilities myutilities;
-	private String ServerMD5Hash;
+	//private String ServerMD5Hash;
 	private boolean bReceivingData;
 	private boolean bShouldBeRemoved;
 	private String ServerPath;
@@ -69,7 +69,6 @@ public class KVServer implements IKVServer, Runnable {
 		HandleClientRequest=false;
 		WriteLockFlag=false;
 		myutilities = new Utilities();
-		ServerMD5Hash="";
 		bReceivingData = false;
 		bShouldBeRemoved = false;
 		
@@ -224,7 +223,8 @@ public class KVServer implements IKVServer, Runnable {
     	//Initialize the KVServer with the metadata, it's local cache size, and the cache replacement strategy,
     	//and block it for client requests, i.e., all client requests are rejected with an SERVER_STOPPED error message;
     	//ECS requests have to be processed.
-    	ServerConfiguration currentSVC=SVCs.FindServerByServerNameHash(ServerMD5Hash);
+    	update();
+    	currentSVC=SVCs.FindServerByServerNameHash(myutilities.cHash(sHostname));
     	Utilities.servStrategy strategy=currentSVC.GetStrategy();
     	int cacheSize=currentSVC.GetCacheSize();
 		DO = new diskOperation();
@@ -242,7 +242,7 @@ public class KVServer implements IKVServer, Runnable {
     	
 		nPort=currentSVC.GetPort();
         serverSocket = new ServerSocket(nPort);
-        update();
+        
         
     	return true;
 
@@ -297,11 +297,11 @@ public class KVServer implements IKVServer, Runnable {
     	//Exits the KVServer application.
     	//move data to next
     	//first target
-    	ServerConfiguration tempSV=SVCs.FindNextHigher(ServerMD5Hash);
+    	ServerConfiguration tempSV=SVCs.FindNextHigher(myutilities.cHash(sHostname));
     	//send to tempSV
     	String[] hashRange=new String[2];
-    	hashRange[0]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetLower();
-    	hashRange[1]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetUpper();
+    	hashRange[0]=SVCs.FindServerByServerNameHash(myutilities.cHash(sHostname)).GetLower();
+    	hashRange[1]=SVCs.FindServerByServerNameHash(myutilities.cHash(sHostname)).GetUpper();
     	moveData(hashRange,tempSV.GetHashValue());
 
     	
@@ -312,11 +312,11 @@ public class KVServer implements IKVServer, Runnable {
     {
 
     	try {
-        	ServerConfiguration tempSV=SVCs.FindNextHigher(ServerMD5Hash);
+        	ServerConfiguration tempSV=SVCs.FindNextHigher(myutilities.cHash(sHostname));
         	//send to tempSV
         	String[] hashRange=new String[2];
-        	hashRange[0]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetLower();
-        	hashRange[1]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetUpper();
+        	hashRange[0]=currentSVC.GetLower();
+        	hashRange[1]=currentSVC.GetUpper();
 			moveData(hashRange,tempSV.GetHashValue());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -351,7 +351,7 @@ public class KVServer implements IKVServer, Runnable {
     	String TargetHostname=tempSVC.GetAddress();
     	int TargetPort=tempSVC.GetPort();
     	ServerKVStore = new KVStore(TargetHostname,TargetPort);
-    	ServerKVStore.MoveDataStart();
+    	//ServerKVStore.MoveDataStart();
     	// find all key value pairs fall into this range
     	String lowerbound=hashRange[0];
     	String upperbound=hashRange[1];
@@ -362,8 +362,11 @@ public class KVServer implements IKVServer, Runnable {
     		ServerKVStore.putNoCache(currentPair.getKey(), currentPair.getValue());
     	}
     	
-    	ListToMove.clear();
-    	ServerKVStore.MoveDataEnd();
+    	for(KeyValuePair currentPair:ListToMove)
+    	{
+    		DO.put(currentPair.getKey(), "");
+    	}
+    	//ServerKVStore.MoveDataEnd();
 		return true;
 	}
     
@@ -380,7 +383,7 @@ public class KVServer implements IKVServer, Runnable {
 			ServerConfiguration svc= myutilities.ServerConfigByteArrayToSerializable(temp);
 			if(svc.GetName().equals(sHostname))
 			{
-				ServerMD5Hash=svc.GetHashValue();
+				//ServerMD5Hash=svc.GetHashValue();
 				//currentSVC=svc;
 			}
 			res.AddServer(svc);
@@ -405,7 +408,7 @@ public class KVServer implements IKVServer, Runnable {
     	if(SVCs == null || SVCs.IsEmpty())
     		return false;
     	else
-    		return ServerMD5Hash.equals(SVCs.FindServerForKey(sHash).GetHashValue());
+    		return myutilities.cHash(sHostname).equals(SVCs.FindServerForKey(sHash).GetHashValue());
     }
     
     public boolean IsLocked()
@@ -493,7 +496,7 @@ public class KVServer implements IKVServer, Runnable {
       				 		tempRange[0]=currentSVC.GetLower();
       				 		tempRange[1]=tempSVC.GetLower();
       				 		update();
-      				 		ServerConfiguration targetHost=SVCs.FindOneBefore(ServerMD5Hash);
+      				 		ServerConfiguration targetHost=SVCs.FindOneBefore(myutilities.cHash(sHostname));
       				 		this.moveData(tempRange, targetHost.GetHashValue());
       				 		currentSVC=tempSVC;
       				 		this.unlockWrite();
@@ -505,6 +508,7 @@ public class KVServer implements IKVServer, Runnable {
       				 		this.start();
       				 		currentSVC.SetStatus(Utilities.servStatus.started);
       				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
+      				 		break;
       				 	default:
       				 		System.out.println("KVServer process invalid: "+status.toString());
       				 		
