@@ -391,6 +391,7 @@ public class ECSClient implements IECSClient {
     			ServerConfiguration sc = uti.ServerConfigByteArrayToSerializable(data);
     			
     			if (sc.GetStatus() != Utilities.servStatus.added){
+    				System.out.println(sc.GetPort());
     				rdyServCount++;
     			}
     		}
