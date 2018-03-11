@@ -55,7 +55,9 @@ public class KVServer implements IKVServer {
 	private Utilities myutilities;
 	private String ServerMD5Hash;
 	private boolean bReceivingData;
-	
+	private boolean bShouldBeRemoved;
+	private String ServerPath;
+	private ServerConfiguration currentSVC;
 	public KVServer(String name, String zkHostname, int zkPort) throws Exception {
 		sHostname = name;
 		sZKHostname = zkHostname;
@@ -66,6 +68,11 @@ public class KVServer implements IKVServer {
 		myutilities = new Utilities();
 		ServerMD5Hash="";
 		bReceivingData = false;
+		bShouldBeRemoved = false;
+		
+		ServerPath="";
+		zkC= new ZKConnection();
+		zk = zkC.connect(sZKHostname+":"+nZKPort);
 		update();
 		
 	}
@@ -268,7 +275,8 @@ public class KVServer implements IKVServer {
 		// TODO
 		//Starts the KVServer, all client requests and all ECS requests are processed.
 		HandleClientRequest=true;
-
+		currentSVC.SetStatus(status);
+		zk.setData(ServerPath, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
 	}
 
     @Override
@@ -276,6 +284,8 @@ public class KVServer implements IKVServer {
 		// TODO
     	//Stops the KVServer, all client requests are rejected and only ECS requests are processed.
     	HandleClientRequest=false;
+		currentSVC.SetStatus(status);
+		zk.setData(ServerPath, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
 	}
 
     @Override
@@ -286,9 +296,11 @@ public class KVServer implements IKVServer {
     	ServerConfiguration tempSV=SVCs.FindNextHigher(ServerMD5Hash);
     	//send to tempSV
     	String[] hashRange=new String[2];
-    	hashRange[0]=tempSV.GetLower();
-    	hashRange[1]=tempSV.GetUpper();
+    	hashRange[0]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetLower();
+    	hashRange[1]=SVCs.FindServerByServerNameHash(ServerMD5Hash).GetUpper();
     	boolean finished=moveData(hashRange,tempSV.GetHashValue());
+		currentSVC.SetStatus(status);
+		zk.setData(ServerPath, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
     	
     	
     }
@@ -339,8 +351,6 @@ public class KVServer implements IKVServer {
     public void update() throws Exception {
     	//Update the metadata repository of this server
 		ServerConfigurations res=new ServerConfigurations();
-		zkC= new ZKConnection();
-		zk = zkC.connect(sZKHostname+":"+nZKPort);
 
 		List<String> childrenList=zk.getChildren("/servers/", true);
 		for(String child: childrenList)
@@ -350,7 +360,9 @@ public class KVServer implements IKVServer {
 			ServerConfiguration svc= myutilities.ServerConfigByteArrayToSerializable(temp);
 			if(sHostname.equals(svc.GetName()))
 			{
+				ServerPath=mypath;
 				ServerMD5Hash=svc.GetHashValue();
+				currentSVC=svc;
 			}
 			res.AddServer(svc);
 		}
@@ -387,8 +399,14 @@ public class KVServer implements IKVServer {
     	return HandleClientRequest;
     }
     
-    public void ReceivingData(boolean receivingData)
+    public void ReceivingData(boolean receivingData) throws Exception
     {
-    	bReceivingData=receivingData;
+
+    	bReceivingData = receivingData;
+    	if(!receivingData && bShouldBeRemoved)
+    	{
+    		//Move data to next server. Do whatever
+    		shutDown();
+    	}
     }
 }

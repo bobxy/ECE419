@@ -6,16 +6,13 @@ import java.util.*;
 import common.ServerConfiguration;
 import Utilities.Utilities;
 public class ServerConfigurations implements Serializable{
-	private static long serialVersionUID;
-	private static HashMap<String, ServerConfiguration> ServerInfo;
-	private Utilities util;
-	private SortedSet<String>MD5Set;
+	private static final long serialVersionUID= 1L;
+	private static HashMap<String, ServerConfiguration> ServerInfo= new HashMap<String, ServerConfiguration>();
+	private Utilities util= new Utilities();
+	private SortedSet<String>MD5Set= new TreeSet<>();
 	public ServerConfigurations()
 	{
-		util = new Utilities();
-		serialVersionUID = 1L;
-		ServerInfo = new HashMap<String, ServerConfiguration>();
-		MD5Set = new TreeSet<>();
+
 	}
 	
 	public void AddServers(ServerConfiguration[] config)
