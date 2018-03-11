@@ -214,6 +214,7 @@ public class KVServer implements IKVServer {
     	boolean res=false;
     	ServerConfiguration currentSVC=SVCs.FindServerByServerNameHash(ServerMD5Hash);
     	String strategy=currentSVC.GetStrategy();
+    	int cacheSize=currentSVC.GetCacheSize();
 		DO = new diskOperation();
 		DO.load_lookup_table();
 		
