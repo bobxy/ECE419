@@ -169,8 +169,9 @@ public class Utilities {
 		starting,
 		stopped,
 		stopping,
-		receiving,
 		sending,
+		exiting,
+		exited,
 		none
 	}
 	public enum servStrategy {
