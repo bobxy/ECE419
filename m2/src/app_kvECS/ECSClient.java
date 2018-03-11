@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
@@ -156,12 +157,13 @@ public class ECSClient implements IECSClient {
 				zk.delete(path, (zk.exists(path, false).getVersion()));
 			} 
     		
+    		zk.setData("/servers", null, zk.exists("/actions", false).getVersion());
     		zk.delete("/servers", zk.exists("/servers", false).getVersion());
 			
-			zk.setData("/actions", null, zk.exists("/actions", false).getVersion());
-			zk.delete("/actions",zk.exists("/actions", false).getVersion());
 			zk.close();
+			zk = null;
     		counter = 0;
+    		
     		}catch (KeeperException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -190,7 +192,7 @@ public class ECSClient implements IECSClient {
     	
     	Runtime run = Runtime.getRuntime();
     	try{
-    		proc = run.exec("chmod u+x /m2/" + script);
+    		proc = run.exec("chmod u+x ./" + script);
     	}catch (IOException e){
     		e.printStackTrace();
     	}
@@ -231,16 +233,21 @@ public class ECSClient implements IECSClient {
     	newNodes = setupNodes(count,cacheStrategy,cacheSize);
     	
     	//do ssh
-    	createScript(newNodes);
     	
     	Process proc;
-    	String script = "script.sh";
+    	String script =createScript(newNodes);
     	
     	Runtime run = Runtime.getRuntime();
     	try{
     		System.out.println("perform ssh");
     		
-    		proc = run.exec("chmod u+x ./" + script);
+    		proc = run.exec(script);
+    		
+    		proc.waitFor();
+    		
+    		PrintStream ps = new PrintStream (proc.getOutputStream());
+    		ps.println();
+    		
     	}catch (IOException e){
     		e.printStackTrace();
     	}
@@ -324,7 +331,7 @@ public class ECSClient implements IECSClient {
     		((ArrayList<IECSNode>) ECSNodeList).remove(idx);
     		 		
     		//perform consistent hashing
-			hash = uti.cHash(newNode.getNodeHost() + ":" + Integer.toString(newNode.getNodePort()));
+			hash = uti.cHash(newNode.getNodeHost() + ":" + newNode.getNodePort());
 	
     		newNode.setNodeHashValue(hash);
     		
@@ -610,6 +617,7 @@ public class ECSClient implements IECSClient {
     					if (shutdown())
     					{
     						System.out.println("Shutdown successful");
+    						break;
     					}
     					else
     						System.out.println("Can not shutdown system");
@@ -818,7 +826,7 @@ public class ECSClient implements IECSClient {
     	}
     }
     
-    public void createScript(Collection<IECSNode> newNodes) throws IOException{
+    public String createScript(Collection<IECSNode> newNodes) throws IOException{
     	
     	try {
     		
@@ -831,6 +839,8 @@ public class ECSClient implements IECSClient {
 			out.println("ssh-keygen");
 			
 			IECSNode temp;
+					
+			//out.println("ssh -n fangyu3@ug151 nohup java -jar ./ECE419/m1/m1-server.jar 7001 10 FIFO&");
 			
 			for (int i=0; i<newNodes.size(); i++){
 				
@@ -838,17 +848,19 @@ public class ECSClient implements IECSClient {
 				
 				out.println("ssh-copy-id " + "\"" + "localhost " + "-p " + Integer.toString(temp.getNodePort()) + "\"");
 				
-				out.println("ssh -n localhost nohup java -jar ./m2-server.jar " + temp.getNodeName() + " " + "localhost " + "6666 &");
+				out.println("ssh -n localhost nohup java -jar ./ECE419/m2/m2-server.jar " + temp.getNodeName() + " " + "localhost " + "6666 &");
 				
 			}
 			
 			out.close();
+			return configFile.getAbsolutePath();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("Cannot create ssh script");
 		}
     	
+    	return null;
     	
     }
     
