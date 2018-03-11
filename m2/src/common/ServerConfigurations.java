@@ -45,7 +45,10 @@ public class ServerConfigurations implements Serializable{
 		String res="";
 		tempSet.remove(MD5Hash);
 		res=tempSet.first();
-		return ServerInfo.get(res);
+		if(res!=null)
+			return ServerInfo.get(res);
+		else
+			return ServerInfo.get(MD5Set.first());
 	}
 	public void RemoveServers()
 	{
