@@ -183,6 +183,7 @@ public class KVServer implements IKVServer {
     
     public static void main(String[] args) throws Exception {
     	try {
+    		System.out.println("SSH connection complete");
 			new LogSetup("logs/server.log", Level.ALL);
 			if(args.length != 4) {
 				System.out.println("Error! Invalid number of arguments!");
