@@ -81,8 +81,9 @@ public interface IKVServer {
      * Starts running the server
      * @throws IOException 
      * @throws NoSuchAlgorithmException 
+     * @throws Exception 
      */
-    public void run() throws NoSuchAlgorithmException, IOException;
+    public void run();
 
     /**
      * Abruptly stop the server without any additional actions
