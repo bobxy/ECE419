@@ -66,10 +66,11 @@ public class ServerConfigurations implements Serializable{
 	}
 	public ServerConfiguration FindServerForKey(String sKey) throws UnsupportedEncodingException, NoSuchAlgorithmException
 	{
+		int nSize = ServerInfo.size();
 		String sHashValue = util.cHash(sKey);
 		for(ServerConfiguration config : ServerInfo.values())
 		{
-			if(config.IsResponsible(sHashValue))
+			if(config.IsResponsible(sHashValue) || nSize == 1)
 				return config;
 		}
 		return null;
