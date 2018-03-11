@@ -388,8 +388,6 @@ public class ECSClient implements IECSClient {
     			
     			byte[] data = zk.getData(path, false, null);
     			
-    			//String status = new String (temp,"UTF-8");
-    			
     			ServerConfiguration sc = uti.ServerConfigByteArrayToSerializable(data);
     			
     			if (sc.GetStatus() != Utilities.servStatus.added){
@@ -895,8 +893,7 @@ public class ECSClient implements IECSClient {
 			}
     			
 			System.out.println("UMD2");
-    		
-    		
+   	
     	}
     }
     
