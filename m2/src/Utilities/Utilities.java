@@ -170,6 +170,7 @@ public class Utilities {
 		stopped,
 		stopping,
 		sending,
+		adding_starting,
 		exiting,
 		exited,
 		none

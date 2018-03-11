@@ -40,8 +40,9 @@ public interface IECSClient {
      * @throws NoSuchAlgorithmException 
      * @throws UnsupportedEncodingException 
      * @throws IOException 
+     * @throws Exception 
      */
-    public IECSNode addNode(String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException, IOException;
+    public IECSNode addNode(String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException, IOException, Exception;
 
     /**
      * Randomly choose <numberOfNodes> servers from the available machines and start the KVServer by issuing an SSH call to the respective machine.
@@ -54,8 +55,9 @@ public interface IECSClient {
      * @throws InterruptedException 
      * @throws KeeperException 
      * @throws IOException 
+     * @throws Exception 
      */
-    public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException, IOException;
+    public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException, IOException, Exception;
 
     /**
      * Sets up `count` servers with the ECS (in this case Zookeeper)
