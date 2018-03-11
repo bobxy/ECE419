@@ -220,7 +220,7 @@ public class KVServer implements IKVServer {
     }
 
     @Override
-    public boolean initKVServer() throws NoSuchAlgorithmException, IOException{
+    public boolean initKVServer() throws Exception{
     	//Initialize the KVServer with the metadata, it's local cache size, and the cache replacement strategy,
     	//and block it for client requests, i.e., all client requests are rejected with an SERVER_STOPPED error message;
     	//ECS requests have to be processed.
@@ -243,6 +243,7 @@ public class KVServer implements IKVServer {
     	
 		nPort=currentSVC.GetPort();
         serverSocket = new ServerSocket(nPort);
+        update();
         
     	return true;
 
@@ -371,8 +372,13 @@ public class KVServer implements IKVServer {
 		for(String child: childrenList)
 		{
 			String mypath="/servers/"+child;
-			byte[] temp=zk.getData(mypath, false, zk.exists(mypath, true));
+			byte[] temp=zk.getData(mypath, false, zk.exists(mypath, false));
 			ServerConfiguration svc= myutilities.ServerConfigByteArrayToSerializable(temp);
+			if(svc.GetName().equals(sHostname))
+			{
+				ServerMD5Hash=svc.GetHashValue();
+				currentSVC=svc;
+			}
 			res.AddServer(svc);
 		}
 		SVCs=res;
@@ -451,8 +457,6 @@ public class KVServer implements IKVServer {
       				 		this.initKVServer();
       				 		this.run();
       				 		currentSVC.SetStatus(Utilities.servStatus.added);
-      				 		
-      				 		//byte[] newZnodeVal=myutilities.ServerConfigSerializableToByteArray(sc)
       				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
       				 		break;
       				 	case starting:
@@ -492,6 +496,12 @@ public class KVServer implements IKVServer {
       				 		this.unlockWrite();
       				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
       				 		break;
+      				 	case adding_starting:
+      				 		this.initKVServer();
+      				 		this.run();
+      				 		this.start();
+      				 		currentSVC.SetStatus(Utilities.servStatus.started);
+      				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
       				 	default:
       				 		System.out.println("KVServer process invalid: "+status.toString());
       				 		
