@@ -81,8 +81,9 @@ public interface IECSClient {
      * Removes nodes with names matching the nodeNames array
      * @param nodeNames names of nodes to remove
      * @return  true on success, false otherwise
+     * @throws Exception 
      */
-    public boolean removeNodes(Collection<String> nodeNames);
+    public boolean removeNodes(Collection<String> nodeNames) throws Exception;
 
     /**
      * Get a map of all nodes
