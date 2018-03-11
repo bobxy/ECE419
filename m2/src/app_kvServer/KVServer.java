@@ -23,6 +23,7 @@ import common.ServerConfigurations;
 import client.KVStore;
 
 import Utilities.Utilities;
+import Utilities.Utilities.servStrategy;
 import app_kvECS.ZKConnection;
 import app_kvServer.IKVServer.CacheStrategy;
 
@@ -218,16 +219,16 @@ public class KVServer implements IKVServer {
     	//ECS requests have to be processed.
     	boolean res=false;
     	ServerConfiguration currentSVC=SVCs.FindServerByServerNameHash(ServerMD5Hash);
-    	String strategy=currentSVC.GetStrategy();
+    	Utilities.servStrategy strategy=currentSVC.GetStrategy();
     	int cacheSize=currentSVC.GetCacheSize();
 		DO = new diskOperation();
 		DO.load_lookup_table();
 		
-		if(strategy.equals("FIFO"))
+		if(strategy == Utilities.servStrategy.FIFO)
 			CacheStrategy = IKVServer.CacheStrategy.FIFO;
-		else if(strategy.equals("LRU"))
+		else if(strategy == Utilities.servStrategy.LRU)
 			CacheStrategy = IKVServer.CacheStrategy.LRU;
-		else if(strategy.equals("LFU"))
+		else if(strategy == Utilities.servStrategy.LFU)
 			CacheStrategy = IKVServer.CacheStrategy.LFU;
 		else
 			CacheStrategy = IKVServer.CacheStrategy.None;

@@ -171,6 +171,7 @@ public class Utilities {
 		stopping,
 		receiving,
 		sending,
+		adding_starting,
 		none
 	}
 	public enum servStrategy {

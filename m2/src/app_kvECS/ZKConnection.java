@@ -34,6 +34,8 @@ public class ZKConnection {
 	         if (we.getState() == KeeperState.SyncConnected) {
 	            connectedSignal.countDown();
 	         }
+	         
+	         
 	      }
 	   });
 			

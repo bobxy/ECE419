@@ -25,7 +25,7 @@ public class ECSNode implements IECSNode{
 		servHashR = new String[2];
 		servHashV ="";
 		servCacheSize = -1;
-		servStatus = Utilities.servStatus.none;
+		servStatus = Utilities.servStatus.adding;
 		servStrategy = Utilities.servStrategy.none;
 	}
 	
@@ -121,7 +121,10 @@ public class ECSNode implements IECSNode{
     	}
     	else if (status.equals("none")){
     		servStatus = Utilities.servStatus.none;
-    	}  	
+    	} 
+    	else if (status.equals("adding_starting")){
+    		servStatus = Utilities.servStatus.adding_starting;
+    	}
     }
     
     public int getNodeCacheSize(){
