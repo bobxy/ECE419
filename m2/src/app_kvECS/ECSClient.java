@@ -30,6 +30,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.*;
 
 import common.ServerConfiguration;
+import common.ServerConfigurations;
 
 import Utilities.Utilities;
 
@@ -145,20 +146,41 @@ public class ECSClient implements IECSClient {
     }
 
     @Override
-    public boolean shutdown() {
+    public boolean shutdown() throws Exception {
     	String path;
     	
     	try {
     		
-    		List<String>childNodeNames=zk.getChildren("/servers", false);
+    		//List<String>childNodeNames=zk.getChildren("/servers", false);
     		
-    		for (String servName:childNodeNames)
+    		for (IECSNode servNode:((ArrayList<IECSNode>)activeECSNodeList))
     		{
-    			path = "/servers/" + servName;
+    			path = "/servers/" + servNode.getNodeName();
+    			
+    			servNode.setNodeStatus(Utilities.servStatus.exiting);
+    			
+    			ServerConfiguration sc = new ServerConfiguration(servNode);
+    			
+    			byte[] data = uti.ServerConfigSerializableToByteArray(sc);
+    			
+    			zk.setData(path, data, (zk.exists(path, false).getVersion()));
+    			
+    			while (true){
+    				data = zk.getData(path, false, null);
+    				
+    				sc = uti.ServerConfigByteArrayToSerializable(data);
+    				
+    				if (sc.GetStatus() == Utilities.servStatus.exited){
+    					
+    					zk.setData(path, null, (zk.exists(path, false).getVersion()));
+    					zk.delete(path, (zk.exists(path, false).getVersion()));
+    					
+    					System.out.print(servNode.getNodeName() + " exited");
+    					break;
+    				}
+    			}
     		
-				zk.setData(path, null, (zk.exists(path, false).getVersion()));
-				
-				zk.delete(path, (zk.exists(path, false).getVersion()));
+
 			} 
     		
     		zk.setData("/servers", null, zk.exists("/servers", false).getVersion());
@@ -199,19 +221,6 @@ public class ECSClient implements IECSClient {
     	proc = run.exec(script);
     		
     	proc.waitFor();
-    		
-    	/*int timeout = 10000; //set timer in milliseconds
-    	
-		boolean rdy = false;
-	
-		rdy = awaitNodes(1,timeout);
-	
-		if (rdy){
-			counter++;
-			return ((ArrayList<IECSNode>)newNodes).get(0);
-		}
-		else
-			return null;*/
    		 
     	//update server znode status
     	IECSNode servNode = ((ArrayList <IECSNode>)newNodes).get(0);
@@ -230,6 +239,8 @@ public class ECSClient implements IECSClient {
 				e.printStackTrace();
 				System.out.println("cannot start server");
 			}
+    	
+    	return servNode;
 			
     }
 
@@ -303,7 +314,7 @@ public class ECSClient implements IECSClient {
     }
 
     @Override
-    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException {
+    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) throws Exception {
     	
     	if (count == 0){
     		System.out.println("No server added");
@@ -353,9 +364,9 @@ public class ECSClient implements IECSClient {
     	
     	//update hash ring
     	
-    	updateHRange();
+    	updateHRange(addedList);
     	
-    	updateMetaData();
+    	//updateMetaData();
    
         return addedList;
     }
@@ -398,7 +409,7 @@ public class ECSClient implements IECSClient {
     }
 
     @Override
-    public boolean removeNodes(Collection<String> nodeNames) {
+    public boolean removeNodes(Collection<String> nodeNames) throws Exception {
         	
     	// find the node to be removed
     	// remove from active ECSNode List
@@ -430,17 +441,24 @@ public class ECSClient implements IECSClient {
     				ServerConfiguration sc = new ServerConfiguration(servNode);
     				
     				byte[] data;
-					try {
-						data = uti.ServerConfigSerializableToByteArray(sc);
-	    				zk.setData(path, data, zk.exists(path, false).getVersion());
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						System.out.println("cannot remove node");
+				
+					data = uti.ServerConfigSerializableToByteArray(sc);
+					zk.setData(path, data, zk.exists(path, false).getVersion());
+					
+					while (true){
+						data = zk.getData(path, false, null);
+						sc = uti.ServerConfigByteArrayToSerializable(data);
+						if (sc.GetStatus() == Utilities.servStatus.removed){
+							
+							zk.setData(path, null, (zk.exists(path, false).getVersion()));
+							zk.delete(path, (zk.exists(path, false).getVersion()));
+							System.out.println(name + " removed");
+							break;
+						}
 					}
-					
+									
 					((ArrayList<String>)nodeNames).remove(i);
-					
+				
 					break;
     			}
     		}
@@ -752,7 +770,7 @@ public class ECSClient implements IECSClient {
     
     //update hash ring
     
-    public void updateHRange(){
+    public void updateHRange(Collection<IECSNode> newNodes) throws Exception{
     	
     	System.out.println(activeECSNodeList);
     	
@@ -788,6 +806,54 @@ public class ECSClient implements IECSClient {
     		}
     		
     		((ArrayList<IECSNode>)activeECSNodeList).get(i).setNodeHashRange(lowerB, upperB);
+    	}
+    	
+    	updateMetaData();
+    	
+    	if (counter != 0){
+    		for (IECSNode servNode: newNodes){
+    			
+    			for (int i=0; i<activeECSNodeList.size(); i++){
+    				
+    				if(servNode == ((ArrayList<IECSNode>)activeECSNodeList).get(i)){
+    					
+    					int nextNodeIdx = i+1;
+    					
+    					IECSNode nextNode;
+    					
+    					if (nextNodeIdx == activeECSNodeList.size()){
+    						nextNode = ((ArrayList<IECSNode>)activeECSNodeList).get(0);
+    					}
+    					
+    					else{
+    						nextNode = ((ArrayList<IECSNode>)activeECSNodeList).get(nextNodeIdx);
+    					}
+    					
+    					String path = "/servers/" + nextNode.getNodeName();
+    					
+    					nextNode.setNodeStatus(Utilities.servStatus.sending);
+    					
+    					ServerConfiguration sc = new ServerConfiguration(nextNode);
+    					
+    					byte[] data = uti.ServerConfigSerializableToByteArray(sc);
+    					
+    					zk.setData(path, data, zk.exists(path, false).getVersion());
+    					
+    					while (true){
+    						
+    						data = zk.getData(path, false, null);
+    						
+    						sc = uti.ServerConfigByteArrayToSerializable(data);
+    						
+    						if(sc.GetStatus() != Utilities.servStatus.sending){
+    							System.out.println(sc.GetName() + " finished sending");
+    							break;
+    						}
+    					}
+    					break;
+    				}
+    			}
+    		}
     	}
     }
     

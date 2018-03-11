@@ -66,8 +66,9 @@ public interface IECSClient {
      * @throws UnsupportedEncodingException 
      * @throws InterruptedException 
      * @throws KeeperException 
+     * @throws Exception 
      */
-    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException;
+    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException, Exception;
 
     /**
      * Wait for all nodes to report status or until timeout expires
@@ -81,8 +82,9 @@ public interface IECSClient {
      * Removes nodes with names matching the nodeNames array
      * @param nodeNames names of nodes to remove
      * @return  true on success, false otherwise
+     * @throws Exception 
      */
-    public boolean removeNodes(Collection<String> nodeNames);
+    public boolean removeNodes(Collection<String> nodeNames) throws Exception;
 
     /**
      * Get a map of all nodes
