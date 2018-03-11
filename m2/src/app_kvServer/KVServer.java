@@ -55,6 +55,7 @@ public class KVServer implements IKVServer {
 	private Utilities myutilities;
 	private String ServerMD5Hash;
 	private boolean bReceivingData;
+	private boolean bShouldBeRemoved;
 	
 	public KVServer(String name, String zkHostname, int zkPort) throws Exception {
 		sHostname = name;
@@ -66,6 +67,7 @@ public class KVServer implements IKVServer {
 		myutilities = new Utilities();
 		ServerMD5Hash="";
 		bReceivingData = false;
+		bShouldBeRemoved = false;
 		update();
 		
 	}
@@ -389,6 +391,10 @@ public class KVServer implements IKVServer {
     
     public void ReceivingData(boolean receivingData)
     {
-    	
+    	bReceivingData = receivingData;
+    	if(!receivingData && bShouldBeRemoved)
+    	{
+    		//Move data to next server. Do whatever
+    	}
     }
 }
