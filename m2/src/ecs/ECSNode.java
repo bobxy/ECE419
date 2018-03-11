@@ -87,9 +87,9 @@ public class ECSNode implements IECSNode{
     	return servStatus;
     }
     
-    public void setNodeStatus(String status){
+    public void setNodeStatus(Utilities.servStatus status){
     	
-    	if (status.equals("added")){
+    	/*if (status.equals("added")){
     		servStatus = Utilities.servStatus.added;
     	}
     	else if (status.equals("adding")){
@@ -124,7 +124,8 @@ public class ECSNode implements IECSNode{
     	} 
     	else if (status.equals("adding_starting")){
     		servStatus = Utilities.servStatus.adding_starting;
-    	}
+    	}*/
+    	servStatus=status;
     }
     
     public int getNodeCacheSize(){

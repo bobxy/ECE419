@@ -106,7 +106,7 @@ public class ECSClient implements IECSClient {
     		if (servConfig.GetStatus() == Utilities.servStatus.added || servConfig.GetStatus() == Utilities.servStatus.stopped)
     		{
     				
-    			servNode.setNodeStatus("starting");
+    			servNode.setNodeStatus(Utilities.servStatus.starting);
     		
     			servConfig = new ServerConfiguration(servNode);
     		
@@ -128,7 +128,7 @@ public class ECSClient implements IECSClient {
     		 
     		path = "/servers/" + servNode.getNodeName();
     		
-    		servNode.setNodeStatus("stopping");
+    		servNode.setNodeStatus(Utilities.servStatus.stopping);
     		
     		ServerConfiguration servConfig = new ServerConfiguration(servNode);
     		
@@ -227,7 +227,7 @@ public class ECSClient implements IECSClient {
     	
     	String path = "/servers/" + servNode.getNodeName();
     	
-    	servNode.setNodeStatus("adding_starting"); 
+    	servNode.setNodeStatus(Utilities.servStatus.adding_starting); 
     		
  		ServerConfiguration servConfig = new ServerConfiguration(servNode);
     		
@@ -292,7 +292,7 @@ public class ECSClient implements IECSClient {
         		 
         		path = "/servers/" + servNode.getNodeName();
         		
-        		servNode.setNodeStatus("adding_starting");
+        		servNode.setNodeStatus(Utilities.servStatus.adding_starting);
         		        		
          		ServerConfiguration servConfig = new ServerConfiguration(servNode);
         		
@@ -436,7 +436,7 @@ public class ECSClient implements IECSClient {
     				
     				String path = "/servers/" + nodeName;
     				
-    				servNode.setNodeStatus("removing");
+    				servNode.setNodeStatus(Utilities.servStatus.removing);
     				
     				ServerConfiguration sc = new ServerConfiguration(servNode);
     				

@@ -36,6 +36,12 @@ public class ServerConfigurations implements Serializable{
 		MD5Set.add(config.GetHashValue());
 	}
 	
+	public ServerConfiguration FindOneBefore(String MD5Hash)
+	{
+		SortedSet<String>tempSet=MD5Set.headSet(MD5Hash);
+		String res=tempSet.last();
+		return ServerInfo.get(res);
+	}
 	public ServerConfiguration FindNextHigher(String MD5Hash)
 	{
 		SortedSet<String> tempSet=MD5Set.tailSet(MD5Hash);

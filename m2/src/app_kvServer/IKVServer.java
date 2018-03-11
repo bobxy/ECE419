@@ -129,5 +129,5 @@ public interface IKVServer {
 
 	public void update() throws Exception;
 
-	public boolean initKVServer() throws NoSuchAlgorithmException, IOException;
+	public boolean initKVServer() throws NoSuchAlgorithmException, IOException, Exception;
 }
