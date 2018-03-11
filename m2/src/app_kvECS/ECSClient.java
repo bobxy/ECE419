@@ -146,7 +146,7 @@ public class ECSClient implements IECSClient {
     }
 
     @Override
-    public boolean shutdown() {
+    public boolean shutdown() throws Exception {
     	String path;
     	
     	try {
@@ -314,7 +314,7 @@ public class ECSClient implements IECSClient {
     }
 
     @Override
-    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException {
+    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) throws Exception {
     	
     	if (count == 0){
     		System.out.println("No server added");
@@ -770,7 +770,7 @@ public class ECSClient implements IECSClient {
     
     //update hash ring
     
-    public void updateHRange(Collection<IECSNode> newNodes) throws KeeperException, InterruptedException{
+    public void updateHRange(Collection<IECSNode> newNodes) throws Exception{
     	
     	System.out.println(activeECSNodeList);
     	

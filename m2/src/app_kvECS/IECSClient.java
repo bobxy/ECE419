@@ -66,8 +66,9 @@ public interface IECSClient {
      * @throws UnsupportedEncodingException 
      * @throws InterruptedException 
      * @throws KeeperException 
+     * @throws Exception 
      */
-    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException;
+    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) throws UnsupportedEncodingException, NoSuchAlgorithmException, KeeperException, InterruptedException, Exception;
 
     /**
      * Wait for all nodes to report status or until timeout expires
