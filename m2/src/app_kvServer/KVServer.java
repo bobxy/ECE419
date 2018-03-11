@@ -319,7 +319,7 @@ public class KVServer implements IKVServer {
     	String TargetHostname=tempSVC.GetAddress();
     	int TargetPort=tempSVC.GetPort();
     	ServerKVStore = new KVStore(TargetHostname,TargetPort);
-    	
+    	ServerKVStore.MoveDataStart();
     	// find all key value pairs fall into this range
     	String lowerbound=hashRange[0];
     	String upperbound=hashRange[1];
@@ -331,7 +331,7 @@ public class KVServer implements IKVServer {
     	}
     	
     	ListToMove.clear();
-    	
+    	ServerKVStore.MoveDataEnd();
 		return true;
 	}
     
@@ -389,6 +389,6 @@ public class KVServer implements IKVServer {
     
     public void ReceivingData(boolean receivingData)
     {
-    	
+    	bReceivingData=receivingData;
     }
 }
