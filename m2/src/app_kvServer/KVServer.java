@@ -1,6 +1,8 @@
 package app_kvServer;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -196,9 +198,9 @@ public class KVServer implements IKVServer, Runnable {
     	try {
     		System.out.println("SSH connection complete");
 			new LogSetup("logs/server.log", Level.ALL);
-			if(args.length != 4) {
+			if(args.length != 3) {
 				System.out.println("Error! Invalid number of arguments!");
-				System.out.println("Usage: Server <port> <cache_size> <cache_strategy>!");
+				System.out.println("Usage: Server <name> <zkaddress> <zkport>!");
 			} else {
 				String sName = args[0];
 				String sZKName = args[1];
@@ -241,8 +243,13 @@ public class KVServer implements IKVServer, Runnable {
 		cache = new Cache(CacheStrategy, cacheSize);
     	
 		nPort=currentSVC.GetPort();
+		
+		PrintWriter writer = new PrintWriter("the-file-name.txt", "UTF-8");
+		writer.println("The first line");
+		writer.println("The second line");
+		writer.close();
         serverSocket = new ServerSocket(nPort);
-        
+        nPort=serverSocket.getLocalPort();
         
     	return true;
 
@@ -449,7 +456,7 @@ public class KVServer implements IKVServer, Runnable {
       	 		break;
       	 	case Expired:
       	 		break;
-      	 }
+      	 }m2/src/app_kvServer/KVServer.java
        }
        else
        {
@@ -462,6 +469,7 @@ public class KVServer implements IKVServer, Runnable {
       				 {
       				 	case adding:
       				 		currentSVC.SetStatus(Utilities.servStatus.added);
+      				 		currentSVC.SetPort(nPort);
       				 		zk.setData(path, myutilities.ServerConfigSerializableToByteArray(currentSVC), -1);
       				 		new Thread(this).start();
       				 		break;
