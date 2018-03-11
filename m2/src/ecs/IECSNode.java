@@ -2,8 +2,11 @@ package ecs;
 
 import java.util.Comparator;
 
-public interface IECSNode {
+import Utilities.Utilities;
+import Utilities.Utilities.servStatus;
 
+public interface IECSNode {
+    
     /**
      * @return  the name of the node (ie "Server 8.8.8.8")
      */
@@ -30,9 +33,17 @@ public interface IECSNode {
     
     public void setNodeHashValue(String value);
     
-    public String getNodeStatus();
+    public servStatus getNodeStatus();
     
     public void setNodeStatus(String status);
+    
+    public int getNodeCacheSize();
+    
+    public void setNodeCacheSize(int cacheSize);
+    
+    public Utilities.servStrategy getNodeStrategy();
+    
+    public void setNodeStrategy(String cacheStrategy);
     
     public void printNodeInfo();
 }

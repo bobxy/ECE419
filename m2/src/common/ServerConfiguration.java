@@ -1,6 +1,8 @@
 package common;
 import java.io.*;
 import java.util.*;
+
+import Utilities.Utilities;
 import ecs.*;
 public class ServerConfiguration implements Serializable{
 	private static final long serialVersionUID = 2L;
@@ -9,10 +11,11 @@ public class ServerConfiguration implements Serializable{
 	private String sUpper;
 	private String sLower;
 	private String sHashValue;
-	private String sStatus;
+	private Utilities.servStatus sStatus;
 	private String sName;
-	private String sStrategy;
+	private Utilities.servStrategy sStrategy;
 	private int sCacheSize;
+	
 	public ServerConfiguration()
 	{
 		sAddress = "";
@@ -20,13 +23,13 @@ public class ServerConfiguration implements Serializable{
 		sUpper = "";
 		sLower = "";
 		sHashValue = "";
-		sStatus = "";
+		sStatus = Utilities.servStatus.none;
 		sName = "";
-		sStrategy="";
+		sStrategy=Utilities.servStrategy.none;
 		sCacheSize=-1;
 	}
 	
-	public ServerConfiguration(String address, int port, String upper, String lower, String HashValue, String status, String Name,String strategy,int cachesize)
+	public ServerConfiguration(String address, int port, String upper, String lower, String HashValue, Utilities.servStatus status, String Name,Utilities.servStrategy strategy,int cachesize)
 	{
 		sAddress = address;
 		nPort = port;
@@ -49,8 +52,8 @@ public class ServerConfiguration implements Serializable{
 		sHashValue = node.getNodeHashValue();
 		sStatus = node.getNodeStatus();
 		sName = node.getNodeName();
-		//sStrategy=node.getNodeStrategy;
-		//sCacheSize=node.getNodeCacheSize;
+		sStrategy=node.getNodeStrategy();
+		sCacheSize=node.getNodeCacheSize();
 	}
 	public void SetCacheSize(int size)
 	{
@@ -62,9 +65,21 @@ public class ServerConfiguration implements Serializable{
 	}
 	public void SetStrategy(String strategy)
 	{
-		sStrategy=strategy;
+		if (strategy.equals("FIFO")){
+    		sStrategy = Utilities.servStrategy.FIFO;
+    	}
+    	else if (strategy.equals("LRU")){
+    		sStrategy = Utilities.servStrategy.LRU;
+    	}
+    	else if (strategy.equals("LFU")){
+    		sStrategy = Utilities.servStrategy.LFU;
+    	}
+    	else if (strategy.equals("none")){
+    		sStrategy = Utilities.servStrategy.none;
+    	} 
+    	
 	}
-	public String GetStrategy()
+	public Utilities.servStrategy GetStrategy()
 	{
 		return sStrategy;
 	}
@@ -95,7 +110,39 @@ public class ServerConfiguration implements Serializable{
 	
 	public void SetStatus(String status)
 	{
-		sStatus = status;
+		if (status.equals("added")){
+    		sStatus = Utilities.servStatus.added;
+    	}
+    	else if (status.equals("adding")){
+    		sStatus = Utilities.servStatus.adding;
+    	}
+    	else if (status.equals("removed")){
+    		sStatus = Utilities.servStatus.removed;
+    	}
+    	else if (status.equals("removing")){
+    		sStatus = Utilities.servStatus.removing;
+    	}
+    	else if (status.equals("started")){
+    		sStatus = Utilities.servStatus.started;
+    	}
+    	else if (status.equals("starting")){
+    		sStatus = Utilities.servStatus.starting;
+    	}
+    	else if (status.equals("stopped")){
+    		sStatus = Utilities.servStatus.stopped;
+    	}
+    	else if (status.equals("stopping")){
+    		sStatus = Utilities.servStatus.stopping;
+    	}
+    	else if (status.equals("receiving")){
+    		sStatus = Utilities.servStatus.receiving;
+    	}
+    	else if (status.equals("sending")){
+    		sStatus = Utilities.servStatus.sending;
+    	}
+    	else if (status.equals("none")){
+    		sStatus = Utilities.servStatus.none;
+    	}  	
 	}
 	
 	public void SetName(String Name)
@@ -128,7 +175,7 @@ public class ServerConfiguration implements Serializable{
 		return sHashValue;
 	}
 	
-	public String GetStatus()
+	public Utilities.servStatus GetStatus()
 	{
 		return sStatus;
 	}
