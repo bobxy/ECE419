@@ -3,11 +3,16 @@ package app_kvServer;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.Socket;
+
+import javax.xml.bind.DatatypeConverter;
+
 import client.TextMessage;
 import common.KVMessage;
 import common.KVMessage.StatusType;
 import common.KVMessageC;
+import common.ServerConfigurations;
 import Utilities.Utilities;
 import org.apache.log4j.*;
 import client.KVStore;
@@ -65,8 +70,10 @@ public class ClientConnection implements Runnable {
 							message.StrToKVM(latestMsg.getMsg());
 							String sKey = message.getKey();
 							String sValue = message.getValue();
-							String sKeyHash = util.cHash(sKey);
-							if(sValue.equals("null"))
+							String sKeyHash = "";
+							if(sKey != null)
+								sKeyHash = util.cHash(sKey);
+							if(sValue == null || sValue.equals("null"))
 								sValue = "";
 							String sRet = "";
 							if(message.getStatus() == StatusType.PUT)
@@ -133,8 +140,14 @@ public class ClientConnection implements Runnable {
 							}
 							else if(message.getStatus() == StatusType.REQUEST_SERVER_CONFIGURATIONS)
 							{
-								TextMessage txt = new TextMessage(util.SerializableToByteArray(kvs.GetServerConfigurations()));
-								sRet = txt.getMsg();
+								System.out.println("hahassssssha");
+								byte[] s = util.SerializableToByteArray(kvs.GetServerConfigurations());
+								PrintWriter writer = new PrintWriter("the-file-name.txt", "UTF-8");
+								writer.println(s);
+								writer.close();
+								//System.out.println(s);
+								sRet = DatatypeConverter.printBase64Binary(util.SerializableToByteArray(kvs.GetServerConfigurations()));
+								
 							}
 							else if(message.getStatus() == StatusType.MOVE_DATA_START)
 							{
@@ -147,6 +160,7 @@ public class ClientConnection implements Runnable {
 								sRet = util.StatusCodeToString(StatusType.SERVER_RECEIVED);
 							}
 							sendMessage(new TextMessage(sRet));
+							System.out.println("ssssssssssssssssssssssssssssss");
 					/* connection either terminated by the client or lost due to 
 					 * network problems*/	
 						}

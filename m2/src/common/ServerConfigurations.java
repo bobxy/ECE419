@@ -7,8 +7,7 @@ import common.ServerConfiguration;
 import Utilities.Utilities;
 public class ServerConfigurations implements Serializable{
 	private static final long serialVersionUID= 1L;
-	private static HashMap<String, ServerConfiguration> ServerInfo= new HashMap<String, ServerConfiguration>();
-	private Utilities util= new Utilities();
+	private HashMap<String, ServerConfiguration> ServerInfo= new HashMap<String, ServerConfiguration>();
 	private SortedSet<String>MD5Set= new TreeSet<>();
 	public ServerConfigurations()
 	{
@@ -66,6 +65,7 @@ public class ServerConfigurations implements Serializable{
 	}
 	public ServerConfiguration FindServerForKey(String sKey) throws UnsupportedEncodingException, NoSuchAlgorithmException
 	{
+		Utilities util = new Utilities();
 		int nSize = ServerInfo.size();
 		String sHashValue = util.cHash(sKey);
 		for(ServerConfiguration config : ServerInfo.values())
@@ -79,5 +79,10 @@ public class ServerConfigurations implements Serializable{
 	public boolean IsEmpty()
 	{
 		return ServerInfo.isEmpty();
+	}
+	
+	public HashMap<String, ServerConfiguration> GetMap()
+	{
+		return ServerInfo;
 	}
 }

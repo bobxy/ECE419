@@ -2,6 +2,7 @@ package Utilities;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 
 import java.io.*;
 import java.util.*;
@@ -16,6 +17,9 @@ import java.security.NoSuchAlgorithmException;
 
 
 public class Utilities {
+	/**
+	 * 
+	 */
 	public Utilities() {
 		// TODO Auto-generated constructor stub
 		//Key to MD5 lookup
@@ -128,15 +132,22 @@ public class Utilities {
 	public byte[] SerializableToByteArray(ServerConfigurations sc) throws Exception
 	{
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutput out = new ObjectOutputStream(bos);
+		System.out.println("hahassssssha1");
+		ObjectOutputStream out = new ObjectOutputStream(bos);
+		System.out.println("hahassssssha2");
+		if(sc == null)
+			System.out.println("hahassssssha4");
 		out.writeObject(sc);
+		out.flush();
+		System.out.println("hahassssssha3");
 		return bos.toByteArray();
 	}
 	
 	public ServerConfigurations ByteArrayToSerializable(byte[] ba) throws Exception
 	{
 		ByteArrayInputStream bis = new ByteArrayInputStream(ba);
-		ObjectInput in = new ObjectInputStream(bis);
+		ObjectInputStream in = new ObjectInputStream(bis);
+		System.out.println("1111111111111111");
 		return (ServerConfigurations)in.readObject();
 	}
 	
@@ -150,6 +161,7 @@ public class Utilities {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutput out = new ObjectOutputStream(bos);
 		out.writeObject(sc);
+		out.flush();
 		return bos.toByteArray();
 	}
 	
