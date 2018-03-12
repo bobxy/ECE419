@@ -65,7 +65,7 @@ public class ECSClient implements IECSClient {
 		System.out.println("12");
 		try{
 			System.out.println("13");
-			zk = zkC.connect("127.0.0.1:6666");
+			zk = zkC.connect("127.0.0.1:8093");
 			
 		}catch (Exception e)
 		{
@@ -221,7 +221,7 @@ public class ECSClient implements IECSClient {
     	proc = run.exec(script);
     		
     	proc.waitFor();
-   		 
+    	
     	//update server znode status
     	IECSNode servNode = ((ArrayList <IECSNode>)newNodes).get(0);
     	
@@ -341,7 +341,7 @@ public class ECSClient implements IECSClient {
     		((ArrayList<IECSNode>) ECSNodeList).remove(idx);
     		 		
     		//perform consistent hashing
-			hash = uti.cHash(newNode.getNodeHost() + ":" + newNode.getNodePort());
+			hash = uti.cHash(newNode.getNodeName());
 	
     		newNode.setNodeHashValue(hash);
     		
@@ -390,7 +390,7 @@ public class ECSClient implements IECSClient {
     			
     			ServerConfiguration sc = uti.ServerConfigByteArrayToSerializable(data);
     			
-    			if (sc.GetStatus() != Utilities.servStatus.added){
+    			if (sc.GetStatus() == Utilities.servStatus.added){
     				rdyServCount++;
     			}
     		}
@@ -584,6 +584,7 @@ public class ECSClient implements IECSClient {
     				}
     				else if(sAction.equals(ADDNODE))
     				{
+    					System.out.println("node added successfully");
     					IECSNode newNode;
     					String cacheStrgy = sElements[1];
     					int cacheSze = Integer.parseInt(sElements[2]);
@@ -926,8 +927,8 @@ public class ECSClient implements IECSClient {
 				
 				//out.println(a);
 				//how to pass 
-				
-				String instruction = String.format("ssh -n %s nohup java -jar ./ECE419/m2/m2-server.jar %s %s %s &",servNode.getNodeHost(),servNode.getNodeName(),hostname,6666);
+				String sPath = configFile.getAbsolutePath();
+				String instruction = String.format("ssh -n %s nohup java -jar %s/m2-server.jar %s %s %s &",servNode.getNodeHost(),sPath.substring(0, sPath.length() - 10), servNode.getNodeName(),hostname,8093);
 				out.println(instruction);
 				
 			}

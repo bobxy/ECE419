@@ -1,9 +1,13 @@
 package client;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.xml.bind.DatatypeConverter;
+
 import Utilities.Utilities;
 import org.apache.log4j.Logger;
 
@@ -60,9 +64,9 @@ public class KVStore extends Thread implements KVCommInterface {
 		addListener(listener);
 		setRunning(true);
 		logger.info("Connection established");
+		start();
 		if(!GetServerConfigurations())
 			logger.error("Client> " + "Error! " + "Unable to fetch server configurations!");
-		start();
 	}
 
 	@Override
@@ -87,7 +91,12 @@ public class KVStore extends Thread implements KVCommInterface {
 					TextMessage latestMsg = stream.receiveMessage();
 					for (ClientSocketListener listener : listeners) {
 						if(bWaitingForConfigurations)
-							sc = util.ByteArrayToSerializable(latestMsg.getMsgBytes());
+						{
+							System.out.println("bWaitingForConfigurations");
+							sc = util.ByteArrayToSerializable(DatatypeConverter.parseBase64Binary(latestMsg.getMsg()));
+							if(sc != null && sc.IsEmpty())
+								System.out.println("bWaitingForConfigurations2");
+						}
 						else
 							kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
 						bReceived = true;
@@ -277,7 +286,6 @@ public class KVStore extends Thread implements KVCommInterface {
 			bWaitingForConfigurations = false;
 			return false;
 		}
-		
 		while (true) {
 			Thread.sleep(1);
 			if (bReceived) {
@@ -299,6 +307,7 @@ public class KVStore extends Thread implements KVCommInterface {
 		{
 			int nNewPort = config.GetPort();
 			String sNewAddress = config.GetAddress();
+			System.out.println(nNewPort + " " + sNewAddress + " " + portnum + " " + addr);
 			if(nNewPort != portnum || !addr.equals(sNewAddress))
 			{
 				disconnect();
