@@ -82,10 +82,7 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 
 		ServerPath = "";
 		zk = new ZooKeeper(zkHostname + ":" + zkPort, 5000, this);
-		zkC = new ZKConnection();
-		zk = zkC.connect(sZKHostname + ":" + nZKPort);
 		update();
-
 	}
 
 	/*
@@ -202,11 +199,8 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 				int zkPort = Integer.parseInt(args[2]);
 				KVServer Server = new KVServer(sName, sZKName, zkPort);
 				// TODO
-				PrintWriter writer = new PrintWriter("/homes/l/laiyong/Desktop/ECE419/m2/server.txt", "UTF-8");
-				writer.println(sName + " " + sZKName + " " + zkPort);
-				writer.close();
-				Server.start();
-				Server.run();
+				//
+				Server.zk.exists(path, watch)
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
