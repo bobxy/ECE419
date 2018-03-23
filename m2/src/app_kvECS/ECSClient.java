@@ -65,7 +65,7 @@ public class ECSClient implements IECSClient {
 		System.out.println("12");
 		try{
 			System.out.println("13");
-			zk = zkC.connect("127.0.0.1:8093");
+			zk = zkC.connect("127.0.0.1:8094");
 			
 		}catch (Exception e)
 		{
@@ -904,6 +904,10 @@ public class ECSClient implements IECSClient {
     		
     		File configFile = new File("script.sh");
     		
+    		if (configFile.exists()){
+    			
+    		}
+    		
     		configFile.createNewFile();
     		
 			PrintWriter out = new PrintWriter(new FileOutputStream("script.sh",false));
@@ -928,7 +932,7 @@ public class ECSClient implements IECSClient {
 				//out.println(a);
 				//how to pass 
 				String sPath = configFile.getAbsolutePath();
-				String instruction = String.format("ssh -n %s nohup java -jar %s/m2-server.jar %s %s %s &",servNode.getNodeHost(),sPath.substring(0, sPath.length() - 10), servNode.getNodeName(),hostname,8093);
+				String instruction = String.format("ssh -n %s nohup java -jar %s/m2-server.jar %s %s %s &",servNode.getNodeHost(),sPath.substring(0, sPath.length() - 10), servNode.getNodeName(),hostname,8094);
 				out.println(instruction);
 				
 			}

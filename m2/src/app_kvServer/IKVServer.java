@@ -99,12 +99,12 @@ public interface IKVServer {
     /**
      * ECS-related start, starts serving requests
      */
-    public void start();
+    public void start_request();
 
     /**
      * ECS-related stop, stops serving requests
      */
-    public void stop();
+    public void stop_request();
 
     /**
      * ECS-related lock, locks the KVServer for write operations
