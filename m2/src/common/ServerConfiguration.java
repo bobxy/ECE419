@@ -50,9 +50,9 @@ public class ServerConfiguration implements Serializable{
 		sUpper = Bounds[1];
 		sLower = Bounds[0];
 		sHashValue = node.getNodeHashValue();
-		sStatus = node.getNodeStatus();
+		//sStatus = node.getNodeStatus();
 		sName = node.getNodeName();
-		sStrategy=node.getNodeStrategy();
+		//sStrategy=node.getNodeStrategy();
 		sCacheSize=node.getNodeCacheSize();
 	}
 	public void SetCacheSize(int size)

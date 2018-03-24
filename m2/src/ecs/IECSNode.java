@@ -33,15 +33,15 @@ public interface IECSNode {
     
     public void setNodeHashValue(String value);
     
-    public servStatus getNodeStatus();
+    public String getNodeStatus();
     
-    public void setNodeStatus(Utilities.servStatus status);
+    public void setNodeStatus(String status);
     
     public int getNodeCacheSize();
     
     public void setNodeCacheSize(int cacheSize);
     
-    public Utilities.servStrategy getNodeStrategy();
+    public String getNodeStrategy();
     
     public void setNodeStrategy(String cacheStrategy);
     
