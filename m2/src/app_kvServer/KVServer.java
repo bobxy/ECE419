@@ -227,13 +227,15 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	@Override
 	public boolean initKVServer() throws Exception {
 
-
+	
 		// call update to update meta data map
 		update();
 		
 		//get cache strategy
 		byte[] res=zk.getData(ServerStrategyPath, false, zk.exists(ServerStrategyPath, false));
+	
 		String cache_strategy=new String(res);
+
 		if(cache_strategy.equals("FIFO"))
 		{
 			CacheStrategy = IKVServer.CacheStrategy.FIFO;
@@ -250,26 +252,28 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		{
 			CacheStrategy = IKVServer.CacheStrategy.None;
 		}
-		
+
 		//get cache size
 		res=zk.getData(ServerSizePath, false, zk.exists(ServerSizePath, false));
+
 		nCacheSize=Integer.parseInt(new String(res));
-		
+
 		DO = new diskOperation();
+
 		DO.load_lookup_table();
-		
+
 		cache = new Cache(CacheStrategy, nCacheSize);
 
 		
 		String ServerInfo=metadataMap.get(HashedName);
 		String[] ServerInfos=ServerInfo.trim().split("\\s+");
-		
+
 		nPort=Integer.parseInt(ServerInfos[1]);
 		LowerBound=ServerInfos[2];
 		UpperBound=ServerInfos[3];
 
 		serverSocket = new ServerSocket(nPort);
-		
+
 		String ReturnStatus="added";
 		CurrentStatus="added";
 		zk.setData(ServerStatusPath, ReturnStatus.getBytes(), -1);
@@ -401,8 +405,11 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	@Override
 	public void update() throws Exception {
 		// Update the metadata repository of this server
+
 		byte[] res=zk.getData(MetaDataPath, true, zk.exists(MetaDataPath, true));
+
 		metadataMap=myutilities.DeserializeByteArrayToHashMap(res);
+
 	}
 
 	@Override
@@ -511,6 +518,8 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 					}
 					else if(status.equals("removing"))
 					{
+						//CurrentStatus="removed";
+						//zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
 						this.lockWrite();
 						this.remove();
 						this.unlockWrite();

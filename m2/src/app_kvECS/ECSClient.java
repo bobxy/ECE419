@@ -148,7 +148,47 @@ public class ECSClient implements IECSClient {
     	String metaDataPath = "/servers/metadata";
     	String status;
     	byte[] statusData;
-    	
+    	List<String> childnodenames=zk.getChildren("/servers", false);
+    	for(String nodename:childnodenames)
+    	{
+    		System.out.println("current nodename in shutdown is: "+nodename);
+    		if(!nodename.equals("metadata"))
+    		{
+				// only one node active, just shut it down, no need to move data
+    			//change status to removing
+    			zk.setData("/servers/"+nodename+"/status", "exiting".getBytes(), -1);
+    			//update meta data hashmap for servers. notify them
+    			//remove from meta data
+    			metaData.remove(uti.cHash(nodename));
+    			zk.setData("/servers/metadata",uti.SerializeHashMapToByteArray(metaData) , -1);
+    			
+    			while(true)
+    			{
+    				byte[] res=zk.getData("/servers/"+nodename+"/status", false, zk.exists("/servers/"+nodename+"/status", false));
+    				if(new String(res).equals("exited"))
+    				{
+    					break;
+    				}
+    			}
+    			//Successfully removed
+    			
+    			//now remove  dependencies,status,strategy,size
+    			zk.setData("/servers/"+nodename+"/status", null, -1);
+    			zk.delete("/servers/"+nodename+"/status", -1);
+    			
+    			zk.setData("/servers/"+nodename+"/strategy", null, -1);
+    			zk.delete("/servers/"+nodename+"/strategy", -1);
+    			
+    			zk.setData("/servers/"+nodename+"/size", null, -1);
+    			zk.delete("/servers/"+nodename+"/size", -1);
+    			
+    			zk.delete("/servers/"+nodename, -1);
+    		}
+    	}
+    	zk.setData("/servers/metadata", null, -1);
+    	zk.delete("/servers/metadata", -1);
+    	zk.delete("/servers", -1);
+    	/*
     	List<String>childNodeNames=zk.getChildren("/servers", false);
     	
     	for (String nodeName: childNodeNames)
@@ -203,7 +243,7 @@ public class ECSClient implements IECSClient {
     	
     	zk.setData("/servers", null, zk.exists("/servers", false).getVersion());
 		zk.delete("/servers", zk.exists("/servers", false).getVersion());
-    	
+    	*/
 		zk.close();
 		zk = null;
 		
@@ -373,18 +413,22 @@ public class ECSClient implements IECSClient {
     		
     		for (IECSNode servNode:activeECSNodeList)
     		{
-    			
+    			//System.out.println("11");
     			String statusPath = "/servers/" + servNode.getNodeName() + "/status";
-    			
+    			//System.out.println("12");
     			byte[] statusData = zk.getData(statusPath, false, null);
-    			
+    			//System.out.println("13");
+    			String namePath = "/servers/" + servNode.getNodeName();
+    			//System.out.println("14");
+    			//System.out.println("15");
     			String status = new String(statusData);
-    			
-    			System.out.println("AwaitNodes: node status: "+status);
-    		
+    			//System.out.println("16");
+    			//System.out.println("17");
+    			System.out.println("AwaitNodes: node status: "+servNode.getNodeName()+ ": " + status);
+    			//System.out.println("18");
     			if (status.equals("added"))
     			{
-    				System.out.println(servNode.getNodePort());
+    				System.out.println(servNode.getNodeName() + " added");
     				rdyServCount++;
     			}
     		}
@@ -402,75 +446,183 @@ public class ECSClient implements IECSClient {
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) throws Exception {
+        for(String name:nodeNames)
+        {
+        	//remove from activate ecsnode list
+        	//remove from metadata
+        	//add back to all available ecsnode list
+        	//update zk tree
         	
+        	//check if its in active node list
+        	
+        	boolean InTheList=false;
+        	for(IECSNode iecsnode:activeECSNodeList)
+        	{
+        		if(iecsnode.getNodeName().equals(name))
+        		{
+        			InTheList=true;
+        			if(activeECSNodeList.size()!=1)
+        			{
+            			//change status to removing
+            			zk.setData("/servers/"+name+"/status", "removing".getBytes(), -1);
+            			//update meta data hashmap for servers. notify them
+            			//remove from meta data
+            			metaData.remove(uti.cHash(name));
+            			zk.setData("/servers/metadata",uti.SerializeHashMapToByteArray(metaData) , -1);
+            			
+            			while(true)
+            			{
+            				byte[] res=zk.getData("/servers/"+name+"/status", false, zk.exists("/servers/"+name+"/status", false));
+            				if(new String(res).equals("removed"))
+            				{
+            					break;
+            				}
+            			}
+            			//Successfully removed
+            			
+            			//now remove  dependencies,status,strategy,size
+            			zk.setData("/servers/"+name+"/status", null, -1);
+            			zk.delete("/servers/"+name+"/status", -1);
+            			
+            			zk.setData("/servers/"+name+"/strategy", null, -1);
+            			zk.delete("/servers/"+name+"/strategy", -1);
+            			
+            			zk.setData("/servers/"+name+"/size", null, -1);
+            			zk.delete("/servers/"+name+"/size", -1);
+            			
+            			zk.delete("/servers/"+name, -1);
+            			
+            			
+
+            			
+            			//add back to available node list
+            			ECSNodeList.add(iecsnode);
+            			//remove from active node list
+            			activeECSNodeList.remove(iecsnode);
+            			break;
+        			}
+        			else
+        			{
+        				// only one node active, just shut it down, no need to move data
+            			//change status to removing
+            			zk.setData("/servers/"+name+"/status", "exiting".getBytes(), -1);
+            			//update meta data hashmap for servers. notify them
+            			//remove from meta data
+            			metaData.remove(uti.cHash(name));
+            			zk.setData("/servers/metadata",uti.SerializeHashMapToByteArray(metaData) , -1);
+            			
+            			while(true)
+            			{
+            				byte[] res=zk.getData("/servers/"+name+"/status", false, zk.exists("/servers/"+name+"/status", false));
+            				if(new String(res).equals("exited"))
+            				{
+            					break;
+            				}
+            			}
+            			//Successfully removed
+            			
+            			//now remove  dependencies,status,strategy,size
+            			zk.setData("/servers/"+name+"/status", null, -1);
+            			zk.delete("/servers/"+name+"/status", -1);
+            			
+            			zk.setData("/servers/"+name+"/strategy", null, -1);
+            			zk.delete("/servers/"+name+"/strategy", -1);
+            			
+            			zk.setData("/servers/"+name+"/size", null, -1);
+            			zk.delete("/servers/"+name+"/size", -1);
+            			
+            			zk.delete("/servers/"+name, -1);
+            			
+            			
+
+            			
+            			//add back to available node list
+            			ECSNodeList.add(iecsnode);
+            			//remove from active node list
+            			activeECSNodeList.remove(iecsnode);
+            			break;
+        			}
+
+        		}
+        	}
+        	if(InTheList==false)
+        	{
+        		System.out.println("node "+name+" not in the activelist, remove node failed");
+        		return false;
+        	}
+        }
+        return true;
     	// find the node to be removed
     	// remove from active ECSNode List
     	// add back to all available ECSNode List
     	// set the status to none
     	// update zk tree
-    	
+    	/*
+    	System.out.println("goes to remove Node");
     	for (int i = nodeNames.size()-1; i>=0; i--)
     	{
-    		
+    		System.out.println("goes to remove Node"+i);
     		String deleteNodeName = ((ArrayList<String>)nodeNames).get(i);
     		String nodeName;
     		IECSNode servNode;
-    		
+    		System.out.println("goes to remove Node2");
     		for (int j=0; i<activeECSNodeList.size(); j++)
     		{
-    			
+    			System.out.println("goes to remove Node3");
     			servNode = ((ArrayList<IECSNode>)activeECSNodeList).get(j);
     			nodeName = servNode.getNodeName();
     			
     			if (deleteNodeName.equals(nodeName))
     			{
-    				
+    				System.out.println("goes to remove Node4");
     				//add serverNode back to list of all available nodes
     				ECSNodeList.add(servNode);
-    				
+    				System.out.println("goes to remove Node5");
     				//delete from list of active nodes
     				((ArrayList<IECSNode>)activeECSNodeList).remove(j);
     				//delete from metaData
     				metaData.remove(uti.cHash(nodeName));
     				
-    				
+    				System.out.println("goes to remove Node6");
     				String statusPath = "/servers/" + nodeName + "/status";
     				String strategyPath = "/servers/" + nodeName + "/strategy";
     				String sizePath = "/servers/" + nodeName + "/size";
     				String namePath = "/servers/" + nodeName;
-    				
+    				System.out.println("goes to remove Node8");
     				String status = "removing";
-    				
+    				System.out.println("goes to remove Node9");
     				byte[] statusData = status.getBytes();
-			
+    				System.out.println("goes to remove Node10");
 					zk.setData(statusPath, statusData, zk.exists(statusPath, false).getVersion());
-					
+					System.out.println("goes to remove Node11");
 					while (true)
 					{
+						System.out.println("goes to remove Node12");
 						statusData = zk.getData(statusPath, false, null);
-						
+						System.out.println("goes to remove Node13");
 						status = new String(statusData);
-						
+						System.out.println("goes to remove Node14");
 						if (status.equals("removed"))
 						{
-							
+							System.out.println("goes to remove Node15");
 							zk.setData(statusPath, null, (zk.exists(statusPath, false).getVersion()));
 							zk.delete(statusPath, (zk.exists(statusPath, false).getVersion()));
-							
+							System.out.println("goes to remove Node16");
 							zk.setData(sizePath, null, (zk.exists(sizePath, false).getVersion()));
 							zk.delete(sizePath, (zk.exists(sizePath, false).getVersion()));
-							
+							System.out.println("goes to remove Node17");
 							zk.setData(strategyPath, null, (zk.exists(strategyPath, false).getVersion()));
 							zk.delete(strategyPath, (zk.exists(strategyPath, false).getVersion()));
-							
+							System.out.println("goes to remove Node18");
 							zk.setData(namePath, null, (zk.exists(namePath, false).getVersion()));
 							zk.delete(namePath, (zk.exists(namePath, false).getVersion()));
-							
+							System.out.println("goes to remove Node19");
 							System.out.println(nodeName + " removed");
 							break;
 						}
+						System.out.println("goes to remove Node20");
 					}
-									
+					System.out.println("goes to remove Node21");			
 					((ArrayList<String>)nodeNames).remove(i);
 					break;
     			}
@@ -486,21 +638,33 @@ public class ECSClient implements IECSClient {
     	System.out.println(nodeNames);
     	
         return false;
+        */
     }
 
     @Override
-    public Map<String, IECSNode> getNodes() {
+    public Map<String, IECSNode> getNodes() throws KeeperException, InterruptedException {
         
     	//traverse activeECSNode List
     	//create map entry for each node
     	
     	Map <String, IECSNode> nodeMap = new HashMap<String,IECSNode>();
-    	
-    	for (IECSNode servNode: activeECSNodeList){
+    	List<String> temp=zk.getChildren("/servers", false);
+    	for(String a:temp)
+    	{
+    		System.out.println("current node is"+a);
+    		List<String> temp2=zk.getChildren("/servers/"+a, false);
+    		if(!temp2.isEmpty())
+    		{
+    			byte[]res=zk.getData("/servers/"+a+"/status", false, zk.exists("/servers/"+a+"/status", false));
+    			System.out.println(new String(res));
+    		}
+    	}
+    	/*for (IECSNode servNode: activeECSNodeList){
     		
     		nodeMap.put(servNode.getNodeName(), servNode);
+    		servNode.printNodeInfo();
     		
-    	}
+    	}*/
         return nodeMap;
     }
 
@@ -632,9 +796,7 @@ public class ECSClient implements IECSClient {
     					Map <String, IECSNode> nodeMap = getNodes();
     					
     					System.out.println("'get nodes successful");
-    					
-    					System.out.println(nodeMap);
-    					
+    					    					
     				}
     				else if (sAction.equals(GETNODE))
     				{

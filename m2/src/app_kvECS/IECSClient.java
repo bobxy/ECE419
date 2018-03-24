@@ -88,8 +88,10 @@ public interface IECSClient {
 
     /**
      * Get a map of all nodes
+     * @throws InterruptedException 
+     * @throws KeeperException 
      */
-    public Map<String, IECSNode> getNodes();
+    public Map<String, IECSNode> getNodes() throws KeeperException, InterruptedException;
 
     /**
      * Get the specific node responsible for the given key
