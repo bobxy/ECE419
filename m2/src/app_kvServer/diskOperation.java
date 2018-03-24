@@ -12,13 +12,13 @@ import Utilities.Utilities;
 
 public class diskOperation {
 
-	public diskOperation() {
+	public diskOperation(String filename) {
 		// TODO Auto-generated constructor stub
 		//populate lookup
 		myutilities=new Utilities();
 		lookup_table = new HashMap<String, Integer>();
 		myFile = new FileSystem();
-		myFile.insert_file("test.file");
+		myFile.insert_file(filename);
 		MD5Set = new TreeSet<>();
 		HashKey=new HashMap<String,String>();
 		WriterLock=new ReentrantLock();
