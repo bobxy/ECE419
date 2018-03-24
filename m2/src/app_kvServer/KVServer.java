@@ -31,7 +31,7 @@ import Utilities.Utilities.servStrategy;
 import app_kvECS.ZKConnection;
 import app_kvServer.IKVServer.CacheStrategy;
 
-public class KVServer implements IKVServer, Runnable, Watcher {
+public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 
 	/**
 	 * Start KV Server with selected name
@@ -58,7 +58,6 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 	private HashMap metadataMap;
 	private boolean WriteLockFlag;
 	private boolean HandleClientRequest;
-	private ZKConnection zkC;
 	private ZooKeeper zk;
 	private ServerConfigurations SVCs;
 	private Utilities myutilities;
@@ -80,14 +79,17 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 		bReceivingData = false;
 		bShouldBeRemoved = false;
 
-		ServerPath = "";
+		ServerPath = "/servers/"+sHostname;
 		zk = new ZooKeeper(zkHostname + ":" + zkPort, 5000, this);
-		zkC = new ZKConnection();
-		zk = zkC.connect(sZKHostname + ":" + nZKPort);
-		update();
-
+		setWatch();
 	}
 
+	void setWatch() throws KeeperException, InterruptedException
+	{
+
+		zk.exists(ServerPath, true);
+		return;
+	}
 	/*
 	 * public ServerConfigurations constructMetaData() throws Exception {
 	 * ServerConfigurations res=new ServerConfigurations(); zkC= new
@@ -200,13 +202,15 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 				String sName = args[0];
 				String sZKName = args[1];
 				int zkPort = Integer.parseInt(args[2]);
-				KVServer Server = new KVServer(sName, sZKName, zkPort);
+				//KVServer Server = new KVServer(sName, sZKName, zkPort);
 				// TODO
-				PrintWriter writer = new PrintWriter("/homes/l/laiyong/Desktop/ECE419/m2/server.txt", "UTF-8");
-				writer.println(sName + " " + sZKName + " " + zkPort);
-				writer.close();
-				Server.start();
-				Server.run();
+				//set watch on current node(server)
+				//Server.setWatch();
+				
+				new KVServer(sName, sZKName, zkPort).start();
+				//Server.start();
+
+
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
@@ -226,19 +230,20 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 		// and block it for client requests, i.e., all client requests are
 		// rejected with an SERVER_STOPPED error message;
 		// ECS requests have to be processed.
-		update();
-		
-		for(ServerConfiguration config : SVCs.GetMap().values())
+		//update();
+		System.out.println("serversocket newed0");
+		byte[] res=zk.getData(ServerPath, true, zk.exists(ServerPath, true));
+		currentSVC=myutilities.ServerConfigByteArrayToSerializable(res);
+		if(currentSVC==null)
 		{
-			System.out.println(config.GetHashValue() + " " + config.GetName());
+			System.out.println("it is null");
 		}
-		
-		currentSVC = SVCs.FindServerByServerNameHash(myutilities
-				.cHash(sHostname));
-		PrintWriter writer = new PrintWriter("/homes/l/laiyong/Desktop/ECE419/m2/server1.txt", "UTF-8");
-		writer.println(currentSVC.GetAddress() + " " + currentSVC.GetName() + " " + currentSVC.GetPort());
-		writer.close();
+		System.out.println("serversocket newed1");
+		System.out.println("serversocket newed2");
+
+		System.out.println("serversocket newed3");
 		System.out.println(currentSVC.GetHashValue() + " " + currentSVC.GetName());
+		System.out.println("finished");
 		Utilities.servStrategy strategy = currentSVC.GetStrategy();
 		int cacheSize = currentSVC.GetCacheSize();
 		DO = new diskOperation();
@@ -255,14 +260,21 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 		cache = new Cache(CacheStrategy, cacheSize);
 
 		nPort = currentSVC.GetPort();
+		System.out.println("my port is:"+nPort);
 		serverSocket = new ServerSocket(nPort);
-		byte[] znodeVal = zk.getData("/servers/" + sHostname, true, zk.exists("/servers/" + sHostname, true));
+		
+		System.out.println("serversocket newed");
+		
+		//byte[] znodeVal = zk.getData(ServerPath, true, zk.exists(ServerPath, true));
 		currentSVC.SetStatus(Utilities.servStatus.added);
+		System.out.println("before set data");
 		zk.setData(
-				"/servers/" + sHostname,
+				ServerPath,
 				myutilities
 						.ServerConfigSerializableToByteArray(currentSVC),
 				-1);
+		System.out.println("after set data");
+		System.out.println("serversocket newed return from init");
 		return true;
 
 	}
@@ -270,7 +282,8 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 	public void run() {
 		try {
 			running = initKVServer();
-
+			System.out.println("here:"+running);
+			System.out.println("here2:"+isRunning());
 			if (serverSocket != null) {
 				while (isRunning()) {
 					try {
@@ -295,7 +308,7 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 	}
 
 	@Override
-	public void start() {
+	public void start_request() {
 		// TODO
 		// Starts the KVServer, all client requests and all ECS requests are
 		// processed.
@@ -303,7 +316,7 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 	}
 
 	@Override
-	public void stop() {
+	public void stop_request() {
 		// TODO
 		// Stops the KVServer, all client requests are rejected and only ECS
 		// requests are processed.
@@ -458,7 +471,7 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 			 * if (event.getState() == KeeperState.SyncConnected) {
 			 * connectedSignal.countDown(); }
 			 */
-
+			System.out.println("goes to process");
 			if (event.getType() == Event.EventType.None) {
 				// we are being told that the state of the connection has
 				// changed
@@ -470,7 +483,7 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 				}
 			} else {
 				// Something has changed on the node
-				if (path.contains(sHostname)) {
+				if (true) {
 					znodeVal = zk.getData(path, true, zk.exists(path, true));
 					Utilities.servStatus status = myutilities
 							.ServerConfigByteArrayToSerializable(znodeVal)
@@ -485,7 +498,7 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 								-1);
 						break;
 					case starting:
-						this.start();
+						this.start_request();
 						currentSVC.SetStatus(Utilities.servStatus.started);
 						zk.setData(
 								path,
@@ -494,7 +507,7 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 								-1);
 						break;
 					case stopping:
-						this.stop();
+						this.stop_request();
 						currentSVC.SetStatus(Utilities.servStatus.stopped);
 						zk.setData(
 								path,
@@ -544,9 +557,8 @@ public class KVServer implements IKVServer, Runnable, Watcher {
 								-1);
 						break;
 					case adding_starting:
-						this.initKVServer();
-						this.run();
-						this.start();
+						System.out.println("goes to adding_starting");
+						this.start_request();
 						currentSVC.SetStatus(Utilities.servStatus.started);
 						zk.setData(
 								path,
