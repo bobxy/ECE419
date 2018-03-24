@@ -102,7 +102,7 @@ public class ECSNode implements IECSNode{
     }
     
     public void setNodeStrategy(String cacheStrategy){
-    	
+    	servStrategy = cacheStrategy;
     }
 
     public void printNodeInfo(){

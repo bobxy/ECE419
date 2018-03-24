@@ -58,39 +58,22 @@ public class ECSClient implements IECSClient {
 	private Collection<IECSNode> activeECSNodeList;
 	private HashMap<String, String> metaData;
 	private Utilities uti;
-	public static int counter = 0;
+	private boolean init;
 
-	public ECSClient(){
+	public ECSClient() throws IOException, InterruptedException, KeeperException{
 		//establish zookeeper connection and return zookeeper object
-		System.out.println("11");
 		zkC = new ZKConnection();
-		System.out.println("12");
-		try{
-			System.out.println("13");
-			zk = zkC.connect("127.0.0.1:8094");
-			
-		}catch (Exception e)
-		{
-			System.out.println("cannot connect to zookeeper!");
-		}
+		zk = zkC.connect("127.0.0.1:8095");
 		
-		//create zookeeper nodes for server and fct
-		try {
-			zk.create("/servers", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-			zk.create("/servers/metadata", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-		} catch (KeeperException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
+		//create zookeeper nodes for server and meta data
+		zk.create("/servers", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+		zk.create("/servers/metadata", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	
 		uti = new Utilities();
 		ECSNodeList = new ArrayList<IECSNode>();
 		activeECSNodeList = new ArrayList<IECSNode>();
 		metaData= new HashMap<String, String>();
+		init = true;
 	}
 
     @Override
@@ -109,7 +92,7 @@ public class ECSClient implements IECSClient {
     		
     		statusData = zk.getData(statusPath, false, null);
     		
-    		status = statusData.toString();
+    		status = new String(statusData);
     		
     		if (status.equals("started") || status.equals("stopped"))
     		{
@@ -193,7 +176,7 @@ public class ECSClient implements IECSClient {
     			{
     				statusData = zk.getData(statusPath, false, null);
     				
-    				status = statusData.toString();
+    				status = new String(statusData);
     				
     				if (status.equals("exited"))
     				{
@@ -234,57 +217,72 @@ public class ECSClient implements IECSClient {
     	
     	String script = createScript(servNode);
     	
+    	//System.out.println(script);
+    	
     	Runtime run = Runtime.getRuntime();
     	
     	Process proc = run.exec(script);
     	
     	proc.waitFor();
     	
-    	for (int i=0; i<activeECSNodeList.size(); i++){
-			
-			if(servNode == ((ArrayList<IECSNode>)activeECSNodeList).get(i)){
-				
-				int nextNodeIdx = i+1;
-				
-				IECSNode nextNode;
-				
-				if (nextNodeIdx == activeECSNodeList.size()){
-					nextNode = ((ArrayList<IECSNode>)activeECSNodeList).get(0);
-				}
-				
-				else{
-					nextNode = ((ArrayList<IECSNode>)activeECSNodeList).get(nextNodeIdx);
-				}
-				
-				String statusPath = "/servers/" + nextNode.getNodeName() + "/status";
-				
-				String status = "sending";
-				
-				byte[] statusData = status.getBytes();
-				
-				zk.setData(statusPath, statusData, zk.exists(statusPath, false).getVersion());
-				
-				while (true){
-					
-					statusData = zk.getData(statusPath, false, null);
-					
-					status = statusData.toString();
-					
-					if(!(status.equals("sending"))){
-						System.out.println(nextNode.getNodeName() + " finished sending");
-						break;
+    	System.out.println("ssh "+servNode.getNodeName()+" done");
+    	
+    	if(!init)
+    	{
+			for (int i = 0; i < activeECSNodeList.size(); i++) {
+
+				if (servNode == ((ArrayList<IECSNode>) activeECSNodeList)
+						.get(i)) {
+
+					int nextNodeIdx = i + 1;
+
+					IECSNode nextNode;
+
+					if (nextNodeIdx == activeECSNodeList.size()) {
+						nextNode = ((ArrayList<IECSNode>) activeECSNodeList)
+								.get(0);
 					}
+
+					else {
+						nextNode = ((ArrayList<IECSNode>) activeECSNodeList)
+								.get(nextNodeIdx);
+					}
+
+					String statusPath = "/servers/" + nextNode.getNodeName()
+							+ "/status";
+
+					String status = "sending";
+
+					byte[] statusData = status.getBytes();
+
+					zk.setData(statusPath, statusData,
+							zk.exists(statusPath, false).getVersion());
+
+					while (true) {
+
+						statusData = zk.getData(statusPath, false, null);
+
+						status = new String(statusData);
+
+						// System.out.println("addNode: nodeStatus: "+status);
+
+						if (!(status.equals("sending"))) {
+							System.out.println(nextNode.getNodeName()
+									+ " finished sending");
+							break;
+						}
+					}
+					break;
 				}
-				break;
 			}
-		}
+    	}
     	
     	return servNode;
     }
 
     @Override
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) throws Exception {
-       
+    	
     	Collection<IECSNode> newNodes = new ArrayList<IECSNode>();
     	
     	for (int i=0; i<count; i++){
@@ -354,7 +352,11 @@ public class ECSClient implements IECSClient {
     	
     	//update hash ring
     	updateHRange();
-    	 
+    	System.out.println("SetupNodes:hash ring update complete");
+    	updateMetaData();
+    	System.out.println("SetupNodes: zookeeper tree update complete");
+    	
+    	System.out.println("SetupNodes complete");
         return addedList;
     }
 
@@ -376,7 +378,9 @@ public class ECSClient implements IECSClient {
     			
     			byte[] statusData = zk.getData(statusPath, false, null);
     			
-    			String status = statusData.toString();
+    			String status = new String(statusData);
+    			
+    			System.out.println("AwaitNodes: node status: "+status);
     		
     			if (status.equals("added"))
     			{
@@ -445,7 +449,7 @@ public class ECSClient implements IECSClient {
 					{
 						statusData = zk.getData(statusPath, false, null);
 						
-						status = statusData.toString();
+						status = new String(statusData);
 						
 						if (status.equals("removed"))
 						{
@@ -810,8 +814,6 @@ public class ECSClient implements IECSClient {
     		metaData.put(upperB,servNode.getNodeHost()+" "+servNode.getNodePort()+" "+lowerB+" "+upperB);
     	}
     	
-    	updateMetaData();
-    	
     }
     
     public void updateMetaData() throws Exception{
@@ -826,29 +828,25 @@ public class ECSClient implements IECSClient {
     	//create zookeeper znodes for server properties
     	for (IECSNode servNode:activeECSNodeList){
     		
-    		System.out.println("UMD0");
-    		if(servNode==null)
-    		{
-    			System.out.println("is null");
-    		}
     		String serverPath="/servers/" + servNode.getNodeName();
+    		
     		String statusPath =  serverPath+ "/status";
-    		System.out.println("is null1");
+    
     		String sizePath = serverPath+ "/size";
-    		System.out.println("is null2");
+    		
     		String strategyPath = serverPath+ "/strategy";
-    		System.out.println("is null3");
+    		
      		String status = "adding";
-     		System.out.println("is null4");
+     		
      		String size = Integer.toString(servNode.getNodeCacheSize());
-     		System.out.println("size is"+size);
+     		
      		String strategy = servNode.getNodeStrategy();
-     		System.out.println("strategy null6"+strategy);  		
+     			
     		byte[] statusData = status.getBytes();
-    		System.out.println("status"+status);
+    		
     		byte[] sizeData = size.getBytes();
     		byte[] strategyData = strategy.getBytes();
-    		System.out.println("is null7");
+    		
     		try {
     			
     			if (zk.exists(serverPath, true) == null)
@@ -885,11 +883,9 @@ public class ECSClient implements IECSClient {
     		
     		File configFile = new File("script.sh");
     		
-    		if (configFile.exists()){
-    			
+    		if (!configFile.exists()){
+    			configFile.createNewFile();
     		}
-    		
-    		configFile.createNewFile();
     		
 			PrintWriter out = new PrintWriter(new FileOutputStream("script.sh",false));
 			
@@ -899,7 +895,7 @@ public class ECSClient implements IECSClient {
 			String hostname = ia.getHostName();
 			
 			String sPath = configFile.getAbsolutePath();
-			String instruction = String.format("ssh -n %s nohup java -jar %s/m2-server.jar %s %s %s &",newNode.getNodeHost(),sPath.substring(0, sPath.length() - 10), newNode.getNodeName(),hostname,8094);
+			String instruction = String.format("ssh -n %s nohup java -jar %s/m2-server.jar %s %s %s &",newNode.getNodeHost(),sPath.substring(0, sPath.length() - 10), newNode.getNodeName(),hostname,8095);
 			out.println(instruction);
 			
 			out.close();
@@ -916,7 +912,7 @@ public class ECSClient implements IECSClient {
     
     /////////////main
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InterruptedException, KeeperException {
         
     	System.out.println("1");
     	

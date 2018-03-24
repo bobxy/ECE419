@@ -233,7 +233,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		
 		//get cache strategy
 		byte[] res=zk.getData(ServerStrategyPath, false, zk.exists(ServerStrategyPath, false));
-		String cache_strategy=res.toString();
+		String cache_strategy=new String(res);
 		if(cache_strategy.equals("FIFO"))
 		{
 			CacheStrategy = IKVServer.CacheStrategy.FIFO;
@@ -253,7 +253,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		
 		//get cache size
 		res=zk.getData(ServerSizePath, false, zk.exists(ServerSizePath, false));
-		nCacheSize=Integer.parseInt(res.toString());
+		nCacheSize=Integer.parseInt(new String(res));
 		
 		DO = new diskOperation();
 		DO.load_lookup_table();
@@ -491,7 +491,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 				if (true) {
 					//check its own node
 					byte[] res = zk.getData(ServerStatusPath, false, zk.exists(ServerStatusPath, false));
-					String status=res.toString();
+					String status=new String(res);
 					if(status.equals("adding"))
 					{
 						CurrentStatus="added";
