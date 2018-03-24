@@ -59,7 +59,8 @@ public class KVStore extends Thread implements KVCommInterface {
 		addListener(listener);
 		setRunning(true);
 		logger.info("Connection established");
-		start();
+		if (!isAlive())
+			start();
 	}
 
 	@Override
@@ -79,23 +80,25 @@ public class KVStore extends Thread implements KVCommInterface {
 
 	public void run() {
 		try {
-			while (isRunning()) {
-				try {
-					TextMessage latestMsg = stream.receiveMessage();
-					for (ClientSocketListener listener : listeners) {
-						kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
-						bReceived = true;
-					}
-				} catch (IOException ioe) {
-					if (isRunning()) {
-						logger.error("Connection lost!");
-						try {
-							tearDownConnection();
-							for (ClientSocketListener listener : listeners) {
-								listener.handleStatus(SocketStatus.CONNECTION_LOST);
+			while (true) {
+				while (isRunning()) {
+					try {
+						TextMessage latestMsg = stream.receiveMessage();
+						for (ClientSocketListener listener : listeners) {
+							kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
+							bReceived = true;
+						}
+					} catch (IOException ioe) {
+						if (isRunning()) {
+							logger.error("Connection lost!");
+							try {
+								tearDownConnection();
+								for (ClientSocketListener listener : listeners) {
+									listener.handleStatus(SocketStatus.CONNECTION_LOST);
+								}
+							} catch (IOException e) {
+								logger.error("Unable to close connection!");
 							}
-						} catch (IOException e) {
-							logger.error("Unable to close connection!");
 						}
 					}
 				}
