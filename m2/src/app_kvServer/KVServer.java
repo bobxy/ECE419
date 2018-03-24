@@ -259,7 +259,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 
 		nCacheSize=Integer.parseInt(new String(res));
 
-		DO = new diskOperation();
+		DO = new diskOperation(sHostname);
 
 		DO.load_lookup_table();
 
