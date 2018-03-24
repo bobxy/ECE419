@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,7 +36,10 @@ public class diskOperation {
 		}
 		return false;
 	}
-	
+	public Set<String>getKeySet()
+	{
+		return lookup_table.keySet();
+	}
 	public void load_file_path(String file_path)
 	{
 		myFile.insert_new_file(file_path);

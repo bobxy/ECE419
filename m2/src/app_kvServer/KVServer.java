@@ -52,6 +52,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	private boolean running;
 	private Cache cache;
 	private diskOperation DO;
+	
 	private String sZKHostname;
 	private int nZKPort;
 	private KVStore ServerKVStore;
@@ -75,14 +76,18 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	private String UpperBound;
 	private String HashedName;
 	private String CurrentStatus;
-
-
+	
+	//replicaDO;
+	private String replicaStorge;
+	private diskOperation replicaDO;
+	
 	public KVServer(String name, String zkHostname, int zkPort)
 			throws Exception {
 		sHostname = name;
 		sZKHostname = zkHostname;
 		nZKPort = zkPort;
 
+		replicaStorge=sHostname+"_replica";
 		HandleClientRequest = false;
 		WriteLockFlag = false;
 		myutilities = new Utilities();
@@ -147,6 +152,10 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 			String sVal = DO.get(key);
 			cache.put(key, sVal);
 			return sVal;
+		}
+		else if(replicaDO.inStorage(key))
+		{
+			return replicaDO.get(key);
 		}
 		return "";
 	}
@@ -262,7 +271,11 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		DO = new diskOperation(sHostname);
 
 		DO.load_lookup_table();
-
+		
+		//load from replica file
+		replicaDO = new diskOperation(replicaStorge);
+		replicaDO.load_lookup_table();
+		
 		cache = new Cache(CacheStrategy, nCacheSize);
 
 		
@@ -334,11 +347,9 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		try {
 			String TheRightOne=myutilities.FindNextOne(metadataMap, HashedName);
 					
-			String[] hashRange = new String[2];
-			hashRange[0] = LowerBound;
-			hashRange[1] = UpperBound;
+			LowerBound=UpperBound;
 			//send all its own data to the right one.
-			moveData(hashRange, TheRightOne);
+			moveData( TheRightOne);
 			
 			
 		} catch (Exception e) {
@@ -364,7 +375,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	}
 
 	@Override
-	public boolean moveData(String[] hashRange, String targetName)
+	public boolean moveData(String targetName)
 			throws Exception {
 		// TODO
 		// Transfer a subset (range) of the KVServer's data to another KVServer
@@ -382,23 +393,44 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 
 		ServerKVStore = new KVStore(TargetHostname, TargetPort);
 		ServerKVStore.connect();
-		// ServerKVStore.MoveDataStart();
-		// find all key value pairs fall into this range
-		String lowerbound = hashRange[0];
-		String upperbound = hashRange[1];
-		
-		ArrayList<KeyValuePair> ListToMove = DO.get_subset(lowerbound,
-				upperbound);
 
-		for (KeyValuePair currentPair : ListToMove) {
-			ServerKVStore.putNoCache(currentPair.getKey(),
-					currentPair.getValue());
-		}
 		
-		//clean up sent data
-		for (KeyValuePair currentPair : ListToMove) {
-			DO.put(currentPair.getKey(), "");
+		Set<String> mykeys=DO.getKeySet();
+		for(String key:mykeys)
+		{
+			String tempKeyHash=myutilities.cHash(key);
+			// if not in bound then, send remove
+			if(LowerBound.compareTo(UpperBound)<0)
+			{
+				//lower < upper
+				if(tempKeyHash.compareTo(LowerBound)<=0 || UpperBound.compareTo(tempKeyHash)<0)
+				{
+					//current <= lower or temp > upper out of bound
+					ServerKVStore.putNoCache(key, DO.get(key));
+					DO.put(key,"");
+					cache.put(key, "");
+				}
+				
+			}
+			else if(UpperBound.compareTo(LowerBound)<0)
+			{
+				//lower>upper
+				if(tempKeyHash.compareTo(LowerBound)<=0 && UpperBound.compareTo(tempKeyHash)<0)
+				{
+					
+					ServerKVStore.putNoCache(key, DO.get(key));
+					DO.put(key,"");
+					cache.put(key, "");
+				}
+			}
+			else
+			{
+				ServerKVStore.putNoCache(key, DO.get(key));
+				DO.put(key,"");
+				cache.put(key, "");
+			}
 		}
+
 		// ServerKVStore.MoveDataEnd();
 		ServerKVStore.disconnect();
 		return true;
@@ -412,6 +444,10 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		byte[] res=zk.getData(MetaDataPath, true, zk.exists(MetaDataPath, true));
 
 		metadataMap=myutilities.DeserializeByteArrayToHashMap(res);
+		String ServerInfo=metadataMap.get(HashedName);
+		String[] ServerInfos=ServerInfo.trim().split("\\s+");
+		LowerBound=ServerInfos[2];
+		UpperBound=ServerInfos[3];
 
 	}
 
@@ -492,6 +528,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 					}
 					else if(status.equals("removing"))
 					{
+						//need to fix
 						//CurrentStatus="removed";
 						//zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
 						this.lockWrite();
@@ -509,18 +546,30 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 					}
 					else if(status.equals("sending"))
 					{
+						//need to fix
 						// older lower bound to new lower bound
 						this.lockWrite();
 						String[] tempRange=new String[2];
-						tempRange[0]=LowerBound;
-						
 						String ServerInfo=metadataMap.get(HashedName);
 						String[] ServerInfos=ServerInfo.trim().split("\\s+");
-						LowerBound=ServerInfos[2];
-						tempRange[1]=LowerBound;
 						String TargetHost=myutilities.FindBeforeOne(metadataMap, HashedName);
-						moveData(tempRange,TargetHost);
+						
+						moveData(TargetHost);
 						this.unlockWrite();
+						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
+					}
+					else if(status.equals("clearingReplica"))
+					{
+						replicaDO.clearStorage();
+						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
+					}
+					else if(status.equals("sendingReplica"))
+					{
+						Set<String> mykeys=DO.getKeySet();
+						for(String key:mykeys)
+						{
+							putKVToReplica(key,DO.get(key));
+						}
 						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
 					}
 
