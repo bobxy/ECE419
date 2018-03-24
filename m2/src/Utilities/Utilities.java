@@ -129,7 +129,7 @@ public class Utilities {
 
 	}
 
-	public byte[] SerializeHashMapToByteArray(HashMap mymap) throws Exception
+	public byte[] SerializeHashMapToByteArray(HashMap<String,String> mymap) throws Exception
 	{
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutputStream out = new ObjectOutputStream(bos);
@@ -138,11 +138,11 @@ public class Utilities {
 		return bos.toByteArray();
 	}
 	
-	public HashMap DeserializeByteArrayToHashMap(byte[] mymap) throws Exception
+	public HashMap<String,String> DeserializeByteArrayToHashMap(byte[] mymap) throws Exception
 	{
 		ByteArrayInputStream bis = new ByteArrayInputStream(mymap);
 		ObjectInputStream in = new ObjectInputStream(bis);
-		return (HashMap)in.readObject();
+		return (HashMap<String,String>)in.readObject();
 	}
 	
 	public byte[] SerializableToByteArray(ServerConfigurations sc) throws Exception
@@ -182,6 +182,57 @@ public class Utilities {
 		return (ServerConfiguration)in.readObject();
 	}
 	
+	public String FindNextOne(HashMap<String,String> mymap,String hashname)
+	{
+		String res="";
+		Set<String> mykeys=mymap.keySet();
+		List SortedList = new ArrayList(mykeys);
+		Collections.sort(SortedList);
+		
+		if(SortedList.get(SortedList.size()-1).toString().equals(hashname))
+		{
+			res=SortedList.get(0).toString();
+		}
+		else
+		{
+			for(int i=0;i<SortedList.size();i++)
+			{
+				if(SortedList.get(i).toString().equals(hashname))
+				{
+					res=SortedList.get(i+1).toString();
+					break;
+				}
+			}
+		}
+
+		return res;
+	}
+	
+	public String FindBeforeOne(HashMap<String,String> mymap,String hashname)
+	{
+		String res="";
+		Set<String> mykeys=mymap.keySet();
+		List SortedList = new ArrayList(mykeys);
+		Collections.sort(SortedList);
+		
+		if(SortedList.get(0).toString().equals(hashname))
+		{
+			res=SortedList.get(SortedList.size()-1).toString();
+		}
+		else
+		{
+			for(int i=1;i<SortedList.size();i++)
+			{
+				if(SortedList.get(i).toString().equals(hashname))
+				{
+					res=SortedList.get(i-1).toString();
+					break;
+				}
+			}
+		}
+
+		return res;
+	}
 	public enum servStatus {
 		added,
 		adding,

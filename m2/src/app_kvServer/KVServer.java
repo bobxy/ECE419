@@ -2,6 +2,7 @@ package app_kvServer;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -9,6 +10,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.locks.ReentrantLock;
 
 import logger.LogSetup;
@@ -55,17 +58,26 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	private String sZKHostname;
 	private int nZKPort;
 	private KVStore ServerKVStore;
-	private HashMap metadataMap;
+	private HashMap<String,String> metadataMap;
 	private boolean WriteLockFlag;
 	private boolean HandleClientRequest;
 	private ZooKeeper zk;
-	private ServerConfigurations SVCs;
+
 	private Utilities myutilities;
 	// private String ServerMD5Hash;
 	private boolean bReceivingData;
 	private boolean bShouldBeRemoved;
+	
 	private String ServerPath;
-	private ServerConfiguration currentSVC;
+	private String MetaDataPath;
+	private String ServerStatusPath;
+	private String ServerStrategyPath;
+	private String ServerSizePath;
+	private String LowerBound;
+	private String UpperBound;
+	private String HashedName;
+	private String CurrentStatus;
+
 
 	public KVServer(String name, String zkHostname, int zkPort)
 			throws Exception {
@@ -76,33 +88,27 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		HandleClientRequest = false;
 		WriteLockFlag = false;
 		myutilities = new Utilities();
+		HashedName=myutilities.cHash(sHostname);
 		bReceivingData = false;
 		bShouldBeRemoved = false;
 
 		ServerPath = "/servers/"+sHostname;
-		zk = new ZooKeeper(zkHostname + ":" + zkPort, 5000, this);
+		MetaDataPath="/servers/metadata";
+		ServerStatusPath=ServerPath+"/status";
+		ServerStrategyPath=ServerPath+"/strategy";
+		ServerSizePath=ServerPath+"/size";
+		
+		zk = new ZooKeeper(sZKHostname + ":" + nZKPort, 5000, this);
 		setWatch();
 	}
 
 	void setWatch() throws KeeperException, InterruptedException
 	{
 
-		zk.exists(ServerPath, true);
+		zk.exists(MetaDataPath, true);
 		return;
 	}
-	/*
-	 * public ServerConfigurations constructMetaData() throws Exception {
-	 * ServerConfigurations res=new ServerConfigurations(); zkC= new
-	 * ZKConnection(); zk = zkC.connect(sZKHostname+":"+nZKPort);
-	 * 
-	 * List<String> childrenList=zk.getChildren("/servers/", true); for(String
-	 * child: childrenList) { String mypath="/servers/"+child; byte[]
-	 * temp=zk.getData(mypath, true, zk.exists(mypath, true));
-	 * ServerConfiguration svc=
-	 * myutilities.ServerConfigByteArrayToSerializable(temp);
-	 * if(svc.GetName()==sHostname) { ServerMD5Hash=svc.GetHashValue(); }
-	 * res.AddServer(svc); } return res; }
-	 */
+
 	@Override
 	public int getPort() {
 		return nPort;
@@ -202,13 +208,8 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 				String sName = args[0];
 				String sZKName = args[1];
 				int zkPort = Integer.parseInt(args[2]);
-				//KVServer Server = new KVServer(sName, sZKName, zkPort);
-				// TODO
-				//set watch on current node(server)
-				//Server.setWatch();
-				
 				new KVServer(sName, sZKName, zkPort).start();
-				//Server.start();
+
 
 
 			}
@@ -225,56 +226,54 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 
 	@Override
 	public boolean initKVServer() throws Exception {
-		// Initialize the KVServer with the metadata, it's local cache size, and
-		// the cache replacement strategy,
-		// and block it for client requests, i.e., all client requests are
-		// rejected with an SERVER_STOPPED error message;
-		// ECS requests have to be processed.
-		//update();
-		System.out.println("serversocket newed0");
-		byte[] res=zk.getData(ServerPath, true, zk.exists(ServerPath, true));
-		currentSVC=myutilities.ServerConfigByteArrayToSerializable(res);
-		if(currentSVC==null)
-		{
-			System.out.println("it is null");
-		}
-		System.out.println("serversocket newed1");
-		System.out.println("serversocket newed2");
 
-		System.out.println("serversocket newed3");
-		System.out.println(currentSVC.GetHashValue() + " " + currentSVC.GetName());
-		System.out.println("finished");
-		Utilities.servStrategy strategy = currentSVC.GetStrategy();
-		int cacheSize = currentSVC.GetCacheSize();
+
+		// call update to update meta data map
+		update();
+		
+		//get cache strategy
+		byte[] res=zk.getData(ServerStrategyPath, false, zk.exists(ServerStrategyPath, false));
+		String cache_strategy=res.toString();
+		if(cache_strategy.equals("FIFO"))
+		{
+			CacheStrategy = IKVServer.CacheStrategy.FIFO;
+		}
+		else if(cache_strategy.equals("LRU"))
+		{
+			CacheStrategy = IKVServer.CacheStrategy.LRU;
+		}
+		else if(cache_strategy.equals("LFU"))
+		{
+			CacheStrategy = IKVServer.CacheStrategy.LFU;
+		}
+		else
+		{
+			CacheStrategy = IKVServer.CacheStrategy.None;
+		}
+		
+		//get cache size
+		res=zk.getData(ServerSizePath, false, zk.exists(ServerSizePath, false));
+		nCacheSize=Integer.parseInt(res.toString());
+		
 		DO = new diskOperation();
 		DO.load_lookup_table();
+		
+		cache = new Cache(CacheStrategy, nCacheSize);
 
-		if (strategy == Utilities.servStrategy.FIFO)
-			CacheStrategy = IKVServer.CacheStrategy.FIFO;
-		else if (strategy == Utilities.servStrategy.LRU)
-			CacheStrategy = IKVServer.CacheStrategy.LRU;
-		else if (strategy == Utilities.servStrategy.LFU)
-			CacheStrategy = IKVServer.CacheStrategy.LFU;
-		else
-			CacheStrategy = IKVServer.CacheStrategy.None;
-		cache = new Cache(CacheStrategy, cacheSize);
+		
+		String ServerInfo=metadataMap.get(HashedName);
+		String[] ServerInfos=ServerInfo.trim().split("\\s+");
+		
+		nPort=Integer.parseInt(ServerInfos[1]);
+		LowerBound=ServerInfos[2];
+		UpperBound=ServerInfos[3];
 
-		nPort = currentSVC.GetPort();
-		System.out.println("my port is:"+nPort);
 		serverSocket = new ServerSocket(nPort);
 		
-		System.out.println("serversocket newed");
-		
-		//byte[] znodeVal = zk.getData(ServerPath, true, zk.exists(ServerPath, true));
-		currentSVC.SetStatus(Utilities.servStatus.added);
-		System.out.println("before set data");
-		zk.setData(
-				ServerPath,
-				myutilities
-						.ServerConfigSerializableToByteArray(currentSVC),
-				-1);
-		System.out.println("after set data");
-		System.out.println("serversocket newed return from init");
+		String ReturnStatus="added";
+		CurrentStatus="added";
+		zk.setData(ServerStatusPath, ReturnStatus.getBytes(), -1);
+
 		return true;
 
 	}
@@ -323,33 +322,20 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		HandleClientRequest = false;
 	}
 
-	@Override
-	public void shutDown() throws Exception {
-		// Exits the KVServer application.
-		// move data to next
-		// first target
-		ServerConfiguration tempSV = SVCs.FindNextHigher(myutilities
-				.cHash(sHostname));
-		// send to tempSV
-		String[] hashRange = new String[2];
-		hashRange[0] = SVCs.FindServerByServerNameHash(
-				myutilities.cHash(sHostname)).GetLower();
-		hashRange[1] = SVCs.FindServerByServerNameHash(
-				myutilities.cHash(sHostname)).GetUpper();
-		moveData(hashRange, tempSV.GetHashValue());
 
-	}
-
+	//need to fix this
 	public void remove() {
 
 		try {
-			ServerConfiguration tempSV = SVCs.FindNextHigher(myutilities
-					.cHash(sHostname));
-			// send to tempSV
+			String TheRightOne=myutilities.FindNextOne(metadataMap, HashedName);
+					
 			String[] hashRange = new String[2];
-			hashRange[0] = currentSVC.GetLower();
-			hashRange[1] = currentSVC.GetUpper();
-			moveData(hashRange, tempSV.GetHashValue());
+			hashRange[0] = LowerBound;
+			hashRange[1] = UpperBound;
+			//send all its own data to the right one.
+			moveData(hashRange, TheRightOne);
+			
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -382,15 +368,19 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		// send a notification to the ECS, if data transfer is completed.
 		// create KVStore object here to take connections from client
 		// use targetName to find appropriate address, port
-		ServerConfiguration tempSVC = SVCs
-				.FindServerByServerNameHash(targetName);
-		String TargetHostname = tempSVC.GetAddress();
-		int TargetPort = tempSVC.GetPort();
+		String ServerInfo=metadataMap.get(targetName);
+		String[] ServerInfos=ServerInfo.trim().split("\\s+");
+		
+		String TargetHostname=ServerInfos[0];
+		int TargetPort=Integer.parseInt(ServerInfos[1]);
+		
+
 		ServerKVStore = new KVStore(TargetHostname, TargetPort);
 		// ServerKVStore.MoveDataStart();
 		// find all key value pairs fall into this range
 		String lowerbound = hashRange[0];
 		String upperbound = hashRange[1];
+		
 		ArrayList<KeyValuePair> ListToMove = DO.get_subset(lowerbound,
 				upperbound);
 
@@ -398,7 +388,8 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 			ServerKVStore.putNoCache(currentPair.getKey(),
 					currentPair.getValue());
 		}
-
+		
+		//clean up sent data
 		for (KeyValuePair currentPair : ListToMove) {
 			DO.put(currentPair.getKey(), "");
 		}
@@ -406,44 +397,18 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		return true;
 	}
 
+	
 	@Override
 	public void update() throws Exception {
 		// Update the metadata repository of this server
-		ServerConfigurations res = new ServerConfigurations();
-
-		List<String> childrenList = zk.getChildren("/servers", true);
-		for (String child : childrenList) {
-			String mypath = "/servers/" + child;
-			byte[] temp = zk.getData(mypath, false, zk.exists(mypath, true));
-			ServerConfiguration svc = myutilities
-					.ServerConfigByteArrayToSerializable(temp);
-			if (svc.GetName().equals(sHostname)) {
-				// ServerMD5Hash=svc.GetHashValue();
-				// currentSVC=svc;
-			}
-			res.AddServer(svc);
-		}
-		SVCs = res;
-
+		byte[] res=zk.getData(MetaDataPath, true, zk.exists(MetaDataPath, true));
+		metadataMap=myutilities.DeserializeByteArrayToHashMap(res);
 	}
 
 	@Override
 	public void putNoCache(String key, String value) throws IOException,
 			NoSuchAlgorithmException {
 		DO.put(key, value);
-	}
-
-	public ServerConfigurations GetServerConfigurations() {
-		System.out.println("GetServerConfigurations");
-		return SVCs;
-	}
-
-	public boolean IsResponsible(String sHash) throws Exception {
-		if (SVCs == null || SVCs.IsEmpty())
-			return false;
-		else
-			return myutilities.cHash(sHostname).equals(
-					SVCs.FindServerForKey(sHash).GetHashValue());
 	}
 
 	public boolean IsLocked() {
@@ -454,24 +419,63 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		return HandleClientRequest;
 	}
 
+	//need to fix this
 	public void ReceivingData(boolean receivingData) throws Exception {
 
 		bReceivingData = receivingData;
 		if (!receivingData && bShouldBeRemoved) {
 			// Move data to next server. Do whatever
-			shutDown();
+			
 		}
 	}
 
+	public String getResponsible(String key) throws UnsupportedEncodingException, NoSuchAlgorithmException
+	{
+		String res="";
+		String HashedKey=myutilities.cHash(key);
+		Set<String>Servers=metadataMap.keySet();
+		for(String temp:Servers)
+		{
+			String ServerInfo=metadataMap.get(temp);
+			String[] ServerInfos=ServerInfo.trim().split("\\s+");
+			String currentLower=ServerInfos[2];
+			String currentUpper=ServerInfos[3];
+			if(currentLower.compareTo(currentUpper)>0)
+			{
+				String zero="";
+				String FF="";
+				for(int i=0;i<32;i++)
+				{
+					zero+="0";
+					FF+="F";
+				}
+				if(HashedKey.compareTo(currentLower)>0 && FF.compareTo(HashedKey)>0)
+				{
+					// is between lower bound and FF
+					res=ServerInfos[0]+ServerInfos[1];
+					break;
+				}
+				else if(HashedKey.compareTo(zero)>0 && currentUpper.compareTo(HashedKey)>0)
+				{
+					// is between 0 and upper bound
+					res=ServerInfos[0]+ServerInfos[1];
+					break;
+				}
+				
+			}
+			else
+			{
+				if(HashedKey.compareTo(currentLower)>0 && currentUpper.compareTo(HashedKey)>0)
+				{
+					res=ServerInfos[0]+ServerInfos[1];
+					break;
+				}
+			}
+		}
+		return res;
+	}
 	public void process(WatchedEvent event) {
 		try {
-			String path = event.getPath();
-			byte[] znodeVal;
-			/*
-			 * if (event.getState() == KeeperState.SyncConnected) {
-			 * connectedSignal.countDown(); }
-			 */
-			System.out.println("goes to process");
 			if (event.getType() == Event.EventType.None) {
 				// we are being told that the state of the connection has
 				// changed
@@ -483,100 +487,64 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 				}
 			} else {
 				// Something has changed on the node
+				update();
 				if (true) {
-					znodeVal = zk.getData(path, true, zk.exists(path, true));
-					Utilities.servStatus status = myutilities
-							.ServerConfigByteArrayToSerializable(znodeVal)
-							.GetStatus();
-					switch (status) {
-					case adding:
-						currentSVC.SetStatus(Utilities.servStatus.added);
-						zk.setData(
-								path,
-								myutilities
-										.ServerConfigSerializableToByteArray(currentSVC),
-								-1);
-						break;
-					case starting:
+					//check its own node
+					byte[] res = zk.getData(ServerStatusPath, false, zk.exists(ServerStatusPath, false));
+					String status=res.toString();
+					if(status.equals("adding"))
+					{
+						CurrentStatus="added";
+						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
+					}
+					else if(status.equals("starting"))
+					{
 						this.start_request();
-						currentSVC.SetStatus(Utilities.servStatus.started);
-						zk.setData(
-								path,
-								myutilities
-										.ServerConfigSerializableToByteArray(currentSVC),
-								-1);
-						break;
-					case stopping:
+						CurrentStatus="started";
+						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
+					}
+					else if(status.equals("stopping"))
+					{
 						this.stop_request();
-						currentSVC.SetStatus(Utilities.servStatus.stopped);
-						zk.setData(
-								path,
-								myutilities
-										.ServerConfigSerializableToByteArray(currentSVC),
-								-1);
-						break;
-					case removing:
+						CurrentStatus="stopped";
+						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
+					}
+					else if(status.equals("removing"))
+					{
 						this.lockWrite();
 						this.remove();
 						this.unlockWrite();
 						this.close();
-						currentSVC.SetStatus(Utilities.servStatus.removed);
-						zk.setData(
-								path,
-								myutilities
-										.ServerConfigSerializableToByteArray(currentSVC),
-								-1);
-						break;
-					case exiting:
-						this.close();
-						currentSVC.SetStatus(Utilities.servStatus.exited);
-						zk.setData(
-								path,
-								myutilities
-										.ServerConfigSerializableToByteArray(currentSVC),
-								-1);
-						break;
-					case sending:
-						// move data to one before
-						this.lockWrite();
-						ServerConfiguration tempSVC = myutilities
-								.ServerConfigByteArrayToSerializable(znodeVal);
-						String[] tempRange = new String[2];
-						tempRange[0] = currentSVC.GetLower();
-						tempRange[1] = tempSVC.GetLower();
-						update();
-						ServerConfiguration targetHost = SVCs
-								.FindOneBefore(myutilities.cHash(sHostname));
-						this.moveData(tempRange, targetHost.GetHashValue());
-						currentSVC = tempSVC;
-						this.unlockWrite();
-						zk.setData(
-								path,
-								myutilities
-										.ServerConfigSerializableToByteArray(currentSVC),
-								-1);
-						break;
-					case adding_starting:
-						System.out.println("goes to adding_starting");
-						this.start_request();
-						currentSVC.SetStatus(Utilities.servStatus.started);
-						zk.setData(
-								path,
-								myutilities
-										.ServerConfigSerializableToByteArray(currentSVC),
-								-1);
-						break;
-					default:
-						System.out.println("KVServer process invalid: "
-								+ status.toString());
-
+						CurrentStatus="removed";
+						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
 					}
-				} else {
-					update();
-				}
-			}
-		} catch (Exception e) {
+					else if(status.equals("exiting"))
+					{
+						this.close();
+						CurrentStatus="exited";
+						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
+					}
+					else if(status.equals("sending"))
+					{
+						// older lower bound to new lower bound
+						this.lockWrite();
+						String[] tempRange=new String[2];
+						tempRange[0]=LowerBound;
+						
+						String ServerInfo=metadataMap.get(HashedName);
+						String[] ServerInfos=ServerInfo.trim().split("\\s+");
+						LowerBound=ServerInfos[2];
+						tempRange[1]=LowerBound;
+						String TargetHost=myutilities.FindBeforeOne(metadataMap, HashedName);
+						moveData(tempRange,TargetHost);
+						this.unlockWrite();
+						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
+					}
 
+				}
+			} 
+		}
+		catch (Exception e) {
 		}
 	}
 }

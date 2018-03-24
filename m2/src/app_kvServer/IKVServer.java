@@ -121,11 +121,6 @@ public interface IKVServer {
      */
     public boolean moveData(String[] hashRange, String targetName) throws Exception;
 
-
-
-	public void shutDown() throws Exception;
-
-
 	public void putNoCache(String key, String value) throws IOException, NoSuchAlgorithmException;
 
 	public void update() throws Exception;
