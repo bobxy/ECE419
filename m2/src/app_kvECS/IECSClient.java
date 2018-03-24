@@ -93,6 +93,8 @@ public interface IECSClient {
 
     /**
      * Get the specific node responsible for the given key
+     * @throws NoSuchAlgorithmException 
+     * @throws UnsupportedEncodingException 
      */
-    public IECSNode getNodeByKey(String Key);
+    public IECSNode getNodeByKey(String Key) throws UnsupportedEncodingException, NoSuchAlgorithmException;
 }

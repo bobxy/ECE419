@@ -106,6 +106,6 @@ public class ECSNode implements IECSNode{
     }
 
     public void printNodeInfo(){
-    	System.out.println(servName + " " + Integer.toString(servPort) + " " + servAddr + " lowerb:" + servHashR[0] + " upperb:" + servHashR[1] + " hash:" + servHashV + " " + servStatus);
+    	System.out.println(servName + ", " + Integer.toString(servPort) + ", " + servAddr + ", lowerb:" + servHashR[0] + ", upperb:" + servHashR[1] + ", hash:" + servHashV + ", status:" + servStatus);
     }
 }

@@ -35,7 +35,7 @@ public interface IECSNode {
     
     public String getNodeStatus();
     
-    public void setNodeStatus(Utilities.servStatus status);
+    public void setNodeStatus(String status);
     
     public int getNodeCacheSize();
     
