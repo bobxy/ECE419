@@ -79,7 +79,38 @@ public class ECSClient implements IECSClient {
     @Override
     public boolean start() throws Exception {
     
-    	String statusPath;
+    	List<String> childnodenames=zk.getChildren("/servers", false);
+    	for(String nodename:childnodenames)
+    	{
+    		System.out.println("current nodename in starting is: "+nodename);
+    		if(!nodename.equals("metadata"))
+    		{
+				// only one node active, just shut it down, no need to move data
+    			//change status to removing
+    			byte[] status=zk.getData("/servers/"+nodename+"/status", false, zk.exists("/servers/"+nodename+"/status", false));
+    			
+    			if(!new String(status).equals("started"))
+    			{
+        			zk.setData("/servers/"+nodename+"/status", "starting".getBytes(), -1);
+        			//update meta data hashmap for servers. notify them
+        			//remove from meta data
+        			//metaData.remove(uti.cHash(nodename));
+        			zk.setData("/servers/metadata",uti.SerializeHashMapToByteArray(metaData) , -1);
+        			
+        			while(true)
+        			{
+        				byte[] res=zk.getData("/servers/"+nodename+"/status", false, zk.exists("/servers/"+nodename+"/status", false));
+        				if(new String(res).equals("started"))
+        				{
+        					break;
+        				}
+        			}
+    			}
+
+    		}
+    	}
+    	return true;
+    	/*String statusPath;
     	String status;
     	byte[] statusData;
     	
@@ -94,7 +125,7 @@ public class ECSClient implements IECSClient {
     		
     		status = new String(statusData);
     		
-    		if (status.equals("started") || status.equals("stopped"))
+    		if (status.equals("started") || status.equals("stopped") || status.equals("added"))
     		{
     				
     			status = "starting";
@@ -108,13 +139,44 @@ public class ECSClient implements IECSClient {
     	
     	zk.setData(metaDataPath, updated_metaData, (zk.exists(metaDataPath, false).getVersion()));
     	
-        return true;
+        return true;*/
     }
 
     @Override
     public boolean stop() throws Exception, InterruptedException {
     
-    	String statusPath;
+    	List<String> childnodenames=zk.getChildren("/servers", false);
+    	for(String nodename:childnodenames)
+    	{
+    		System.out.println("current nodename in starting is: "+nodename);
+    		if(!nodename.equals("metadata"))
+    		{
+				// only one node active, just shut it down, no need to move data
+    			//change status to removing
+    			byte[] status=zk.getData("/servers/"+nodename+"/status", false, zk.exists("/servers/"+nodename+"/status", false));
+    			
+    			if(!new String(status).equals("stopped"))
+    			{
+        			zk.setData("/servers/"+nodename+"/status", "stopping".getBytes(), -1);
+        			//update meta data hashmap for servers. notify them
+        			//remove from meta data
+        			//metaData.remove(uti.cHash(nodename));
+        			zk.setData("/servers/metadata",uti.SerializeHashMapToByteArray(metaData) , -1);
+        			
+        			while(true)
+        			{
+        				byte[] res=zk.getData("/servers/"+nodename+"/status", false, zk.exists("/servers/"+nodename+"/status", false));
+        				if(new String(res).equals("stopped"))
+        				{
+        					break;
+        				}
+        			}
+    			}
+
+    		}
+    	}
+    	return true;
+    	/*String statusPath;
     	String status;
     	byte[] statusData;
     	
@@ -135,7 +197,7 @@ public class ECSClient implements IECSClient {
     	
     	zk.setData(metaDataPath, updated_metaData, (zk.exists(metaDataPath, false).getVersion()));
     	
-        return true;
+        return true;*/
     }
 
     @Override
