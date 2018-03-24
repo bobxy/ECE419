@@ -12,7 +12,6 @@ import client.TextMessage;
 import common.KVMessage;
 import common.KVMessage.StatusType;
 import common.KVMessageC;
-import common.ServerConfigurations;
 import Utilities.Utilities;
 import org.apache.log4j.*;
 import client.KVStore;

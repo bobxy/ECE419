@@ -16,8 +16,6 @@ import client.ClientSocketListenerInterface.SocketStatus;
 import common.KVMessage;
 import common.KVMessageC;
 import common.KVMessage.StatusType;
-import common.ServerConfigurations;
-import common.ServerConfiguration;
 
 public class KVStore extends Thread implements KVCommInterface {
 	/**

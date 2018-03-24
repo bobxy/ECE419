@@ -186,7 +186,7 @@ public class Utilities {
 	{
 		String res="";
 		Set<String> mykeys=mymap.keySet();
-		List SortedList = new ArrayList(mykeys);
+		List<String> SortedList = new ArrayList<String>(mykeys);
 		Collections.sort(SortedList);
 		
 		if(SortedList.get(SortedList.size()-1).toString().equals(hashname))
@@ -212,7 +212,7 @@ public class Utilities {
 	{
 		String res="";
 		Set<String> mykeys=mymap.keySet();
-		List SortedList = new ArrayList(mykeys);
+		List<String> SortedList = new ArrayList<String>(mykeys);
 		Collections.sort(SortedList);
 		
 		if(SortedList.get(0).toString().equals(hashname))

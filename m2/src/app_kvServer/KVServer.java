@@ -24,9 +24,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.Watcher.*;
 
-import common.ServerConfiguration;
-import common.ServerConfigurations;
-
 import client.KVStore;
 
 import Utilities.Utilities;
