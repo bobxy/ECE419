@@ -13,8 +13,8 @@ public class ECSNode implements IECSNode{
 	private String[] servHashR;
 	private String servHashV;
 	private int servCacheSize;
-	Utilities.servStatus servStatus;
-	Utilities.servStrategy servStrategy;
+	String servStatus;
+	String servStrategy;
     
 
 	public ECSNode(String name, String address, int port) {
@@ -25,8 +25,6 @@ public class ECSNode implements IECSNode{
 		servHashR = new String[2];
 		servHashV ="";
 		servCacheSize = -1;
-		servStatus = Utilities.servStatus.adding;
-		servStrategy = Utilities.servStrategy.none;
 	}
 	
 	public ECSNode(ServerConfiguration config)
@@ -37,9 +35,9 @@ public class ECSNode implements IECSNode{
 		servHashR = new String[2];
 		servHashR[0] = config.GetLower();
 		servHashR[1] = config.GetUpper();
-		servStatus = config.GetStatus();
+		//servStatus = config.GetStatus();
 		servCacheSize = config.GetCacheSize();
-		servStrategy = config.GetStrategy();
+		//servStrategy = config.GetStrategy();
 	}
 	   /**
      * @return  the name of the node (ie "Server 8.8.8.8")
@@ -83,48 +81,11 @@ public class ECSNode implements IECSNode{
     	servHashV = value;
     }
     
-    public Utilities.servStatus getNodeStatus(){
+    public String getNodeStatus(){
     	return servStatus;
     }
     
-    public void setNodeStatus(Utilities.servStatus status){
-    	
-    	/*if (status.equals("added")){
-    		servStatus = Utilities.servStatus.added;
-    	}
-    	else if (status.equals("adding")){
-    		servStatus = Utilities.servStatus.adding;
-    	}
-    	else if (status.equals("removed")){
-    		servStatus = Utilities.servStatus.removed;
-    	}
-    	else if (status.equals("removing")){
-    		servStatus = Utilities.servStatus.removing;
-    	}
-    	else if (status.equals("started")){
-    		servStatus = Utilities.servStatus.started;
-    	}
-    	else if (status.equals("starting")){
-    		servStatus = Utilities.servStatus.starting;
-    	}
-    	else if (status.equals("stopped")){
-    		servStatus = Utilities.servStatus.stopped;
-    	}
-    	else if (status.equals("stopping")){
-    		servStatus = Utilities.servStatus.stopping;
-    	}
-    	else if (status.equals("receiving")){
-    		servStatus = Utilities.servStatus.receiving;
-    	}
-    	else if (status.equals("sending")){
-    		servStatus = Utilities.servStatus.sending;
-    	}
-    	else if (status.equals("none")){
-    		servStatus = Utilities.servStatus.none;
-    	} 
-    	else if (status.equals("adding_starting")){
-    		servStatus = Utilities.servStatus.adding_starting;
-    	}*/
+    public void setNodeStatus(String status){
     	servStatus=status;
     }
     
@@ -136,24 +97,11 @@ public class ECSNode implements IECSNode{
     	servCacheSize = cacheSize;
     }
     
-    public Utilities.servStrategy getNodeStrategy(){
+    public String getNodeStrategy(){
     	return servStrategy;
     }
     
     public void setNodeStrategy(String cacheStrategy){
-    	
-    	if (cacheStrategy.equals("FIFO")){
-    		servStrategy = Utilities.servStrategy.FIFO;
-    	}
-    	else if (cacheStrategy.equals("LRU")){
-    		servStrategy = Utilities.servStrategy.LRU;
-    	}
-    	else if (cacheStrategy.equals("LFU")){
-    		servStrategy = Utilities.servStrategy.LFU;
-    	}
-    	else if (cacheStrategy.equals("none")){
-    		servStrategy = Utilities.servStrategy.none;
-    	} 
     	
     }
 
