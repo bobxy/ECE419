@@ -19,11 +19,7 @@ public interface KVMessage {
 		SERVER_WRITE_LOCK,      /* Server locked for out, only get possible 10*/
 		SERVER_NOT_RESPONSIBLE,  /* Request not successful, server not responsible for key 11*/
 		
-		REQUEST_SERVER_CONFIGURATIONS,
 		PUT_WITHOUT_CACHING,
-		MOVE_DATA_START,
-		MOVE_DATA_END,
-		SERVER_RECEIVED
 	}
 
 	/**

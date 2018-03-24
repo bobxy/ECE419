@@ -16,8 +16,6 @@ import client.ClientSocketListenerInterface.SocketStatus;
 import common.KVMessage;
 import common.KVMessageC;
 import common.KVMessage.StatusType;
-import common.ServerConfigurations;
-import common.ServerConfiguration;
 
 public class KVStore extends Thread implements KVCommInterface {
 	/**
@@ -40,12 +38,9 @@ public class KVStore extends Thread implements KVCommInterface {
 	private KVMessageC kvmsg;
 	private boolean bReceived;
 	private Utilities util;
-	private boolean bWaitingForConfigurations;
-	private ServerConfigurations sc;
-	
+
 	public KVStore(String address, int port) {
 		// TODO Auto-generated method stub
-		bWaitingForConfigurations = false;
 		addr = address;
 		portnum = port;
 		listeners = new HashSet<ClientSocketListener>();
@@ -65,8 +60,6 @@ public class KVStore extends Thread implements KVCommInterface {
 		setRunning(true);
 		logger.info("Connection established");
 		start();
-		if(!GetServerConfigurations())
-			logger.error("Client> " + "Error! " + "Unable to fetch server configurations!");
 	}
 
 	@Override
@@ -90,15 +83,7 @@ public class KVStore extends Thread implements KVCommInterface {
 				try {
 					TextMessage latestMsg = stream.receiveMessage();
 					for (ClientSocketListener listener : listeners) {
-						if(bWaitingForConfigurations)
-						{
-							System.out.println("bWaitingForConfigurations");
-							sc = util.ByteArrayToSerializable(DatatypeConverter.parseBase64Binary(latestMsg.getMsg()));
-							if(sc != null && sc.IsEmpty())
-								System.out.println("bWaitingForConfigurations2");
-						}
-						else
-							kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
+						kvmsg.StrToKVM(listener.handleNewMessage(latestMsg));
 						bReceived = true;
 					}
 				} catch (IOException ioe) {
@@ -126,7 +111,7 @@ public class KVStore extends Thread implements KVCommInterface {
 	public boolean isRunning() {
 		return running;
 	}
-	
+
 	public void setRunning(boolean run) {
 		running = run;
 	}
@@ -165,26 +150,36 @@ public class KVStore extends Thread implements KVCommInterface {
 						StatusType.PUT_ERROR);
 				return message;
 			}
-			if(reconnect(key))
-			{
-				if (value == null)
-					value = "";
-				String msg = "3 " + key + " " + value;
-				stream.sendMessage(new TextMessage(msg));
+			if (value == null)
+				value = "";
+			String msg = "3 " + key + " " + value;
+			stream.sendMessage(new TextMessage(msg));
+
+			while (true) {
+				Thread.sleep(1);
+				if (bReceived) {
+					bReceived = false;
+					break;
+				}
 			}
-			else
-				return new KVMessageC(key, null, StatusType.PUT_ERROR);
+
+			while (kvmsg.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE) {
+				addr = kvmsg.getKey();
+				portnum = Integer.parseInt(kvmsg.getValue());
+				connect();
+
+				stream.sendMessage(new TextMessage(msg));
+				while (true) {
+					Thread.sleep(1);
+					if (bReceived) {
+						bReceived = false;
+						break;
+					}
+				}
+			}
 		} catch (IOException e) {
 			logger.error("Client> " + "Error! " + "Unable to send message!");
 			disconnect();
-		}
-
-		while (true) {
-			Thread.sleep(1);
-			if (bReceived) {
-				bReceived = false;
-				break;
-			}
 		}
 		return kvmsg;
 	}
@@ -200,164 +195,74 @@ public class KVStore extends Thread implements KVCommInterface {
 			}
 			if (value == null)
 				value = "";
-			String msg = util.StatusCodeToString(StatusType.PUT_WITHOUT_CACHING) + " " + key + " " + value;
+			String msg = util
+					.StatusCodeToString(StatusType.PUT_WITHOUT_CACHING)
+					+ " "
+					+ key + " " + value;
 			stream.sendMessage(new TextMessage(msg));
+
+			while (true) {
+				Thread.sleep(1);
+				if (bReceived) {
+					bReceived = false;
+					break;
+				}
+			}
+
+			while (kvmsg.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE) {
+				addr = kvmsg.getKey();
+				portnum = Integer.parseInt(kvmsg.getValue());
+				connect();
+
+				stream.sendMessage(new TextMessage(msg));
+				while (true) {
+					Thread.sleep(1);
+					if (bReceived) {
+						bReceived = false;
+						break;
+					}
+				}
+			}
 		} catch (IOException e) {
 			logger.error("Client> " + "Error! " + "Unable to send message!");
 			disconnect();
 		}
-
-		while (true) {
-			Thread.sleep(1);
-			if (bReceived) {
-				bReceived = false;
-				break;
-			}
-		}
 		return kvmsg;
 	}
-	
+
 	@Override
 	public KVMessage get(String key) throws Exception {
 		// TODO Auto-generated method stub
 		try {
-			if(reconnect(key))
-			{
-				String msg = "0 " + key;
-				stream.sendMessage(new TextMessage(msg));
+			String msg = "0 " + key;
+			stream.sendMessage(new TextMessage(msg));
+
+			while (true) {
+				Thread.sleep(1);
+				if (bReceived) {
+					bReceived = false;
+					break;
+				}
 			}
-			else
-				return new KVMessageC(key, null, StatusType.GET_ERROR);
-		} catch (IOException e) {
-			logger.error("Client> " + "Error! " + "Unable to send message!");
-			disconnect();
-		}
-		while (true) {
-			Thread.sleep(1);
-			if (bReceived) {
-				bReceived = false;
-				break;
-			}
-		}
-		return kvmsg;
-	}
-	
-	public KVMessage retry(KVMessageC msg) throws Exception
-	{
-		StatusType type = msg.getStatus();
-		if(GetServerConfigurations())
-		{
-			if(type == StatusType.PUT)
-			{
-				return put(msg.getKey(), msg.getValue());
-			}
-			else if(type == StatusType.GET)
-			{
-				return get(msg.getKey());
-			}
-		}
-		else
-		{
-			if(type == StatusType.PUT)
-			{
-				return new KVMessageC(msg.getKey(), msg.getValue(), StatusType.PUT_ERROR);
-			}
-			else if(type == StatusType.GET)
-			{
-				return new KVMessageC(msg.getKey(), msg.getValue(), StatusType.GET_ERROR);
-			}
-		}
-		return null;
-	}
-	
-	private boolean GetServerConfigurations() throws Exception
-	{
-		bWaitingForConfigurations = true;
-		try
-		{
-			sc = null;
-			String sRequest = util.StatusCodeToString(StatusType.REQUEST_SERVER_CONFIGURATIONS);
-			stream.sendMessage(new TextMessage(sRequest));
-		}
-		catch (IOException e)
-		{
-			logger.error("Client> " + "Error! " + "Unable to send message!");
-			disconnect();
-			bWaitingForConfigurations = false;
-			return false;
-		}
-		while (true) {
-			Thread.sleep(1);
-			if (bReceived) {
-				bReceived = false;
-				break;
-			}
-		}
-		bWaitingForConfigurations = false;
-		return (sc != null) && !sc.IsEmpty();
-	}
-	
-	private boolean reconnect(String sKey) throws Exception
-	{
-		if(sc == null)
-			return false;
-		
-		ServerConfiguration config = sc.FindServerForKey(sKey);
-		if(config != null)
-		{
-			int nNewPort = config.GetPort();
-			String sNewAddress = config.GetAddress();
-			System.out.println(nNewPort + " " + sNewAddress + " " + portnum + " " + addr);
-			if(nNewPort != portnum || !addr.equals(sNewAddress))
-			{
-				disconnect();
-				addr = sNewAddress;
-				portnum = nNewPort;
+
+			while (kvmsg.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE) {
+				addr = kvmsg.getKey();
+				portnum = Integer.parseInt(kvmsg.getValue());
 				connect();
+
+				stream.sendMessage(new TextMessage(msg));
+				while (true) {
+					Thread.sleep(1);
+					if (bReceived) {
+						bReceived = false;
+						break;
+					}
+				}
 			}
-			return true;
-		}
-		else
-		{
-			logger.error("Client> " + "Error! " + "Unable to find the responsible server!");
-			return false;
-		}
-	}
-	
-	public KVMessage MoveDataStart() throws Exception
-	{
-		try {
-			String msg = util.StatusCodeToString(StatusType.MOVE_DATA_START);
-			stream.sendMessage(new TextMessage(msg));
+
 		} catch (IOException e) {
 			logger.error("Client> " + "Error! " + "Unable to send message!");
 			disconnect();
-		}
-		while (true) {
-			Thread.sleep(1);
-			if (bReceived) {
-				bReceived = false;
-				break;
-			}
-		}
-		return kvmsg;
-	}
-	
-	public KVMessage MoveDataEnd() throws Exception
-	{
-		try {
-			String msg = util.StatusCodeToString(StatusType.MOVE_DATA_END);
-			stream.sendMessage(new TextMessage(msg));
-		} catch (IOException e) {
-			logger.error("Client> " + "Error! " + "Unable to send message!");
-			disconnect();
-		}
-		while (true) {
-			Thread.sleep(1);
-			if (bReceived) {
-				bReceived = false;
-				break;
-			}
 		}
 		return kvmsg;
 	}
