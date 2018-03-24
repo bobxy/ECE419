@@ -164,6 +164,7 @@ public class KVStore extends Thread implements KVCommInterface {
 			}
 
 			while (kvmsg.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE) {
+				disconnect();
 				addr = kvmsg.getKey();
 				portnum = Integer.parseInt(kvmsg.getValue());
 				connect();
@@ -210,6 +211,7 @@ public class KVStore extends Thread implements KVCommInterface {
 			}
 
 			while (kvmsg.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE) {
+				disconnect();
 				addr = kvmsg.getKey();
 				portnum = Integer.parseInt(kvmsg.getValue());
 				connect();
@@ -246,6 +248,7 @@ public class KVStore extends Thread implements KVCommInterface {
 			}
 
 			while (kvmsg.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE) {
+				disconnect();
 				addr = kvmsg.getKey();
 				portnum = Integer.parseInt(kvmsg.getValue());
 				connect();
