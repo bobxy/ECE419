@@ -80,7 +80,7 @@ public class ClientConnection implements Runnable {
 							{
 								if(!kvs.IsLocked())
 								{
-									if(kvs.IsResponsible(sKeyHash))
+									if(kvs.IsResponsible(sKeyHash, kvs.GetLowerBound(), kvs.GetUpperBound()))
 									{
 										if(util.InvaildKey(sKey))
 								    	{
@@ -107,7 +107,13 @@ public class ClientConnection implements Runnable {
 										}
 									}
 									else
-										sRet = util.StatusCodeToString(StatusType.SERVER_NOT_RESPONSIBLE) + " " + sKey + " " + sValue;
+									{
+										String[] correctServer = kvs.getResponsible(sKey).trim().split("\\s+");
+										if(correctServer.length == 2)
+											sRet = util.StatusCodeToString(StatusType.SERVER_NOT_RESPONSIBLE) + " " + correctServer[0] + " " + correctServer[1];
+										else
+											sRet = util.StatusCodeToString(StatusType.PUT_ERROR);
+									}
 								}
 								else
 								{
@@ -117,7 +123,7 @@ public class ClientConnection implements Runnable {
 							}
 							else if(message.getStatus() == StatusType.GET)
 							{
-								if(kvs.IsResponsible(sKeyHash))
+								if(kvs.IsResponsible(sKeyHash, kvs.GetLowerBound(), kvs.GetUpperBound()))
 								{
 									if(util.InvaildKey(sKey))
 										sRet = "1 " +  sKey;
@@ -131,36 +137,20 @@ public class ClientConnection implements Runnable {
 									}
 								}
 								else
-									sRet = util.StatusCodeToString(StatusType.SERVER_NOT_RESPONSIBLE) + " " + sKey + " " + sValue;
+								{
+									String[] correctServer = kvs.getResponsible(sKey).trim().split("\\s+");
+									if(correctServer.length == 2)
+										sRet = util.StatusCodeToString(StatusType.SERVER_NOT_RESPONSIBLE) + " " + correctServer[0] + " " + correctServer[1];
+									else
+										sRet = util.StatusCodeToString(StatusType.GET_ERROR);
+								}
 							}
 							else if(message.getStatus() == StatusType.PUT_WITHOUT_CACHING)
 							{
 								kvs.putNoCache(sKey, sValue);
 								sRet = util.StatusCodeToString(StatusType.PUT_SUCCESS) + " " + sKey + " " + sValue;
 							}
-							else if(message.getStatus() == StatusType.REQUEST_SERVER_CONFIGURATIONS)
-							{
-								System.out.println("hahassssssha");
-								byte[] s = util.SerializableToByteArray(kvs.GetServerConfigurations());
-								PrintWriter writer = new PrintWriter("the-file-name.txt", "UTF-8");
-								writer.println(s);
-								writer.close();
-								//System.out.println(s);
-								sRet = DatatypeConverter.printBase64Binary(util.SerializableToByteArray(kvs.GetServerConfigurations()));
-								
-							}
-							else if(message.getStatus() == StatusType.MOVE_DATA_START)
-							{
-								kvs.ReceivingData(true);
-								sRet = util.StatusCodeToString(StatusType.SERVER_RECEIVED);
-							}
-							else if(message.getStatus() == StatusType.MOVE_DATA_END)
-							{
-								kvs.ReceivingData(false);
-								sRet = util.StatusCodeToString(StatusType.SERVER_RECEIVED);
-							}
 							sendMessage(new TextMessage(sRet));
-							System.out.println("ssssssssssssssssssssssssssssss");
 					/* connection either terminated by the client or lost due to 
 					 * network problems*/	
 						}
@@ -281,7 +271,4 @@ public class ClientConnection implements Runnable {
 				+ msg.getMsg().trim() + "'");
 		return msg;
     }
-	
-	
-	
 }

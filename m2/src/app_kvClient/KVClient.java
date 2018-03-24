@@ -217,13 +217,7 @@ public class KVClient implements IKVClient {
     }
     
     private KVMessage get(String key) throws Exception {
-    	KVMessage message = KVS.get(key);
-    	if(message.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE)
-    	{
-    		KVMessageC request = new KVMessageC(key, null, StatusType.GET);
-    		message = KVS.retry(request);
-    	}
-    	return message;
+    	return KVS.get(key);
     }
     
     private KVMessage put(String key, String value) throws Exception {
@@ -233,11 +227,6 @@ public class KVClient implements IKVClient {
     		return message;
     	}
     	KVMessage message = KVS.put(key, value);
-    	if(message.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE)
-    	{
-    		KVMessageC request = new KVMessageC(key, value, StatusType.PUT);
-    		message = KVS.retry(request);
-    	}
     	return message;
     }
     

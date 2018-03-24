@@ -440,37 +440,8 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 			String[] ServerInfos=ServerInfo.trim().split("\\s+");
 			String currentLower=ServerInfos[2];
 			String currentUpper=ServerInfos[3];
-			if(currentLower.compareTo(currentUpper)>0)
-			{
-				String zero="";
-				String FF="";
-				for(int i=0;i<32;i++)
-				{
-					zero+="0";
-					FF+="F";
-				}
-				if(HashedKey.compareTo(currentLower)>0 && FF.compareTo(HashedKey)>0)
-				{
-					// is between lower bound and FF
-					res=ServerInfos[0]+ServerInfos[1];
-					break;
-				}
-				else if(HashedKey.compareTo(zero)>0 && currentUpper.compareTo(HashedKey)>0)
-				{
-					// is between 0 and upper bound
-					res=ServerInfos[0]+ServerInfos[1];
-					break;
-				}
-				
-			}
-			else
-			{
-				if(HashedKey.compareTo(currentLower)>0 && currentUpper.compareTo(HashedKey)>0)
-				{
-					res=ServerInfos[0]+ServerInfos[1];
-					break;
-				}
-			}
+			if(IsResponsible(HashedKey, currentLower, currentUpper))
+				return ServerInfos[0] + " " + ServerInfos[1]; 
 		}
 		return res;
 	}
@@ -546,5 +517,40 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		}
 		catch (Exception e) {
 		}
+	}
+	
+	public boolean IsResponsible(String HashedKey, String currentLower, String currentUpper)
+	{
+		if(currentLower.compareTo(currentUpper)>0)
+		{
+			String zero="";
+			String FF="";
+			for(int i=0;i<32;i++)
+			{
+				zero+="0";
+				FF+="f";
+			}
+			if(HashedKey.compareTo(currentLower)>0 && FF.compareTo(HashedKey)>0)
+				return true;
+			else if(HashedKey.compareTo(zero)>0 && currentUpper.compareTo(HashedKey)>0)
+				return true;
+			
+		}
+		else
+		{
+			if(HashedKey.compareTo(currentLower)>0 && currentUpper.compareTo(HashedKey)>0)
+				return true;
+		}
+		return false;
+	}
+	
+	public String GetLowerBound()
+	{
+		return LowerBound;
+	}
+	
+	public String GetUpperBound()
+	{
+		return UpperBound;
 	}
 }
