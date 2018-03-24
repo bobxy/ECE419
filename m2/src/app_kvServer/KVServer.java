@@ -70,6 +70,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	private String ServerStatusPath;
 	private String ServerStrategyPath;
 	private String ServerSizePath;
+	private String ServerReplicaPath;
 	private String LowerBound;
 	private String UpperBound;
 	private String HashedName;
@@ -94,6 +95,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		ServerStatusPath=ServerPath+"/status";
 		ServerStrategyPath=ServerPath+"/strategy";
 		ServerSizePath=ServerPath+"/size";
+		ServerReplicaPath=ServerPath+"/replica";
 		
 		zk = new ZooKeeper(sZKHostname + ":" + nZKPort, 5000, this);
 		setWatch();
@@ -153,6 +155,8 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	public void putKV(String key, String value) throws Exception {
 		DO.put(key, value);
 		cache.put(key, value);
+		//sent to my replica
+		putKVToReplica(key,value);
 	}
 
 	@Override
@@ -377,6 +381,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		
 
 		ServerKVStore = new KVStore(TargetHostname, TargetPort);
+		ServerKVStore.connect();
 		// ServerKVStore.MoveDataStart();
 		// find all key value pairs fall into this range
 		String lowerbound = hashRange[0];
@@ -395,6 +400,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 			DO.put(currentPair.getKey(), "");
 		}
 		// ServerKVStore.MoveDataEnd();
+		ServerKVStore.disconnect();
 		return true;
 	}
 
@@ -550,6 +556,21 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		return false;
 	}
 	
+	public void putKVToReplica(String key,String value) throws Exception
+	{
+		List<String> replicas=zk.getChildren(ServerReplicaPath, false);
+		for(String replica:replicas)
+		{
+			String ServerInfo=metadataMap.get(replica);
+			String[] ServerInfos=ServerInfo.trim().split("\\s+");
+			String DestinationAddress=ServerInfos[0];
+			int DestinationPort=Integer.parseInt(ServerInfos[1]);
+			ServerKVStore = new KVStore(DestinationAddress, DestinationPort);
+			ServerKVStore.connect();
+			ServerKVStore.putNoCache(key, value);
+			ServerKVStore.disconnect();
+		}
+	}
 	public String GetLowerBound()
 	{
 		return LowerBound;
