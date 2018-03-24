@@ -129,17 +129,28 @@ public class Utilities {
 
 	}
 
+	public byte[] SerializeHashMapToByteArray(HashMap mymap) throws Exception
+	{
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutputStream out = new ObjectOutputStream(bos);
+		out.writeObject(mymap);
+		out.flush();
+		return bos.toByteArray();
+	}
+	
+	public HashMap DeserializeByteArrayToHashMap(byte[] mymap) throws Exception
+	{
+		ByteArrayInputStream bis = new ByteArrayInputStream(mymap);
+		ObjectInputStream in = new ObjectInputStream(bis);
+		return (HashMap)in.readObject();
+	}
+	
 	public byte[] SerializableToByteArray(ServerConfigurations sc) throws Exception
 	{
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		System.out.println("hahassssssha1");
 		ObjectOutputStream out = new ObjectOutputStream(bos);
-		System.out.println("hahassssssha2");
-		if(sc == null)
-			System.out.println("hahassssssha4");
 		out.writeObject(sc);
 		out.flush();
-		System.out.println("hahassssssha3");
 		return bos.toByteArray();
 	}
 	
@@ -147,7 +158,6 @@ public class Utilities {
 	{
 		ByteArrayInputStream bis = new ByteArrayInputStream(ba);
 		ObjectInputStream in = new ObjectInputStream(bis);
-		System.out.println("1111111111111111");
 		return (ServerConfigurations)in.readObject();
 	}
 	
