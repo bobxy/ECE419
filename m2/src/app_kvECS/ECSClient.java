@@ -158,7 +158,7 @@ public class ECSClient implements IECSClient {
 				InvokeInterrupt();
 				while(GetStatus(child).equals("exiting"))
 				{
-					
+					sleep();
 				}
 				DeletePath(child);
 			}
@@ -209,7 +209,7 @@ public class ECSClient implements IECSClient {
 		InvokeInterrupt();
 		while(GetStatus(newNode.getNodeName()).equals("adding"))
 		{
-			
+			sleep();
 		}
 		
 		return newNode;
@@ -228,7 +228,7 @@ public class ECSClient implements IECSClient {
 		System.out.println("before sending");
 		while(GetStatus(Sender).equals("sending"))
 		{
-			
+			sleep();
 		}
 		System.out.println("after sending");
 		SetStatus(temp.getNodeName(),"starting");
@@ -236,7 +236,7 @@ public class ECSClient implements IECSClient {
 		System.out.println("before starting");
 		while(GetStatus(temp.getNodeName()).equals("starting"))
 		{
-			
+			sleep();
 		}
 		System.out.println("after sending");
 		return temp;
@@ -329,21 +329,21 @@ public class ECSClient implements IECSClient {
 			{
 				if(metaData.containsKey(uti.cHash(servername)))
 				{
-					System.out.println("found the one to remove");
+
 					SetStatus(servername,"removing");
-					System.out.println("after status the one to remove");
+
 					InvokeInterrupt();
-					System.out.println("after interrupt the one to remove");
+
 					while(GetStatus(servername).equals("removing"))
 					{
-						
+						sleep();
 					}
-					System.out.println("after loop the one to remove");
+
 					String ServerInfo=metaData.get(uti.cHash(servername));
-					System.out.println("after serverinfo the one to remove");
+
 					String[] ServerInfos=ServerInfo.trim().split("\\s+");
 					ECSNode servNode = new ECSNode(servername, ServerInfos[0], Integer.parseInt(ServerInfos[1]));
-					System.out.println("after constructor the one to remove");
+	
 					ECSNodeList.add(servNode);
 					
 					metaData.remove(uti.cHash(servername));
@@ -775,6 +775,13 @@ public class ECSClient implements IECSClient {
 				ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 	}
 
+	public void sleep()
+	{
+		for(int i=0;i<10000;i++)
+		{
+			
+		}
+	}
 	// ///////////main
 
 	public static void main(String[] args) throws IOException,
