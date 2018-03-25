@@ -106,6 +106,8 @@ public class ECSNode implements IECSNode{
     }
 
     public void printNodeInfo(){
-    	System.out.println(servName + ", " + Integer.toString(servPort) + ", " + servAddr + ", lowerb:" + servHashR[0] + ", upperb:" + servHashR[1] + ", hash:" + servHashV + ", status:" + servStatus);
+		System.out.println("Current node name is: "+getNodeName());
+		System.out.println("Current node IP is: "+getNodeHost());
+		System.out.println("Current node port is: "+getNodePort());
     }
 }

@@ -165,7 +165,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		DO.put(key, value);
 		cache.put(key, value);
 		//sent to my replica
-		putKVToReplica(key,value);
+		//putKVToReplica(key,value);
 	}
 
 	@Override
@@ -202,7 +202,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		}
 	}
 
-	private boolean isRunning() {
+	public boolean isRunning() {
 		return this.running;
 	}
 
@@ -347,9 +347,28 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		try {
 			String TheRightOne=myutilities.FindNextOne(metadataMap, HashedName);
 					
-			LowerBound=UpperBound;
-			//send all its own data to the right one.
-			moveData( TheRightOne);
+			String ServerInfo=metadataMap.get(TheRightOne);
+			String[] ServerInfos=ServerInfo.trim().split("\\s+");
+			
+			String TargetHostname=ServerInfos[0];
+			int TargetPort=Integer.parseInt(ServerInfos[1]);
+			
+
+			ServerKVStore = new KVStore(TargetHostname, TargetPort);
+			ServerKVStore.connect();
+
+			Set<String> mykeys=DO.getKeySet();
+			for(String key:mykeys)
+			{
+
+				ServerKVStore.putNoCache(key, DO.get(key));
+				DO.put(key,"");
+				cache.put(key, "");
+				
+			}
+
+			// ServerKVStore.MoveDataEnd();
+			ServerKVStore.disconnect();
 			
 			
 		} catch (Exception e) {
@@ -398,6 +417,13 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		Set<String> mykeys=DO.getKeySet();
 		for(String key:mykeys)
 		{
+			if(IsResponsible(myutilities.cHash(key),ServerInfos[2], ServerInfos[3]))
+			{
+				ServerKVStore.putNoCache(key, DO.get(key));
+				DO.put(key,"");
+				cache.put(key, "");
+			}
+			/*
 			String tempKeyHash=myutilities.cHash(key);
 			// if not in bound then, send remove
 			if(LowerBound.compareTo(UpperBound)<0)
@@ -429,6 +455,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 				DO.put(key,"");
 				cache.put(key, "");
 			}
+			*/
 		}
 
 		// ServerKVStore.MoveDataEnd();
@@ -455,6 +482,10 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	public void putNoCache(String key, String value) throws IOException,
 			NoSuchAlgorithmException {
 		DO.put(key, value);
+		if(cache.inCache(key))
+		{
+			cache.put(key, value);
+		}
 	}
 
 	public boolean IsLocked() {
@@ -523,7 +554,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 					else if(status.equals("stopping"))
 					{
 						this.stop_request();
-						CurrentStatus="stopped";
+						CurrentStatus="added";
 						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
 					}
 					else if(status.equals("removing"))
@@ -549,11 +580,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 						//need to fix
 						// older lower bound to new lower bound
 						this.lockWrite();
-						String[] tempRange=new String[2];
-						String ServerInfo=metadataMap.get(HashedName);
-						String[] ServerInfos=ServerInfo.trim().split("\\s+");
-						String TargetHost=myutilities.FindBeforeOne(metadataMap, HashedName);
-						
+						String TargetHost=myutilities.FindBeforeOne(metadataMap, HashedName);					
 						moveData(TargetHost);
 						this.unlockWrite();
 						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
@@ -582,6 +609,8 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	
 	public boolean IsResponsible(String HashedKey, String currentLower, String currentUpper)
 	{
+		if(metadataMap.size() == 1)
+			return true;
 		if(currentLower.compareTo(currentUpper)>0)
 		{
 			String zero="";
@@ -594,8 +623,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 			if(HashedKey.compareTo(currentLower)>0 && FF.compareTo(HashedKey)>0)
 				return true;
 			else if(HashedKey.compareTo(zero)>0 && currentUpper.compareTo(HashedKey)>0)
-				return true;
-			
+				return true;		
 		}
 		else
 		{

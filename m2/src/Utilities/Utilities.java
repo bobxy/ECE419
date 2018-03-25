@@ -189,17 +189,17 @@ public class Utilities {
 		List<String> SortedList = new ArrayList<String>(mykeys);
 		Collections.sort(SortedList);
 		
-		if(SortedList.get(SortedList.size()-1).toString().equals(hashname))
+		if(SortedList.get(SortedList.size()-1).equals(hashname))
 		{
-			res=SortedList.get(0).toString();
+			res=SortedList.get(0);
 		}
 		else
 		{
 			for(int i=0;i<SortedList.size();i++)
 			{
-				if(SortedList.get(i).toString().equals(hashname))
+				if(SortedList.get(i).equals(hashname))
 				{
-					res=SortedList.get(i+1).toString();
+					res=SortedList.get(i+1);
 					break;
 				}
 			}
@@ -215,17 +215,17 @@ public class Utilities {
 		List<String> SortedList = new ArrayList<String>(mykeys);
 		Collections.sort(SortedList);
 		
-		if(SortedList.get(0).toString().equals(hashname))
+		if(SortedList.get(0).equals(hashname))
 		{
-			res=SortedList.get(SortedList.size()-1).toString();
+			res=SortedList.get(SortedList.size()-1);
 		}
 		else
 		{
 			for(int i=1;i<SortedList.size();i++)
 			{
-				if(SortedList.get(i).toString().equals(hashname))
+				if(SortedList.get(i).equals(hashname))
 				{
-					res=SortedList.get(i-1).toString();
+					res=SortedList.get(i-1);
 					break;
 				}
 			}
@@ -233,6 +233,31 @@ public class Utilities {
 
 		return res;
 	}
+	
+	public boolean IsResponsible(String HashedKey, String currentLower, String currentUpper)
+	{
+		if(currentLower.compareTo(currentUpper)>0)
+		{
+			String zero="";
+			String FF="";
+			for(int i=0;i<32;i++)
+			{
+				zero+="0";
+				FF+="f";
+			}
+			if(HashedKey.compareTo(currentLower)>0 && FF.compareTo(HashedKey)>0)
+				return true;
+			else if(HashedKey.compareTo(zero)>0 && currentUpper.compareTo(HashedKey)>0)
+				return true;		
+		}
+		else
+		{
+			if(HashedKey.compareTo(currentLower)>0 && currentUpper.compareTo(HashedKey)>0)
+				return true;
+		}
+		return false;
+	}
+	
 	public enum servStatus {
 		added,
 		adding,
