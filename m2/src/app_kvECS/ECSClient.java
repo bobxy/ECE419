@@ -232,25 +232,24 @@ public class ECSClient implements IECSClient {
 			String SenderHash=uti.FindNextOne(metaData, temp.getNodeHashValue());
 			String Sender=HashToNodeName.get(SenderHash);
 			SetStatus(Sender,"sending");
-			System.out.println("sender is: "+Sender);
-			System.out.println("receiver is: "+temp.getNodeName());
+
 			InvokeInterrupt();
 			System.out.println("before sending");
 			while(GetStatus(Sender).equals("sending"))
 			{
 				sleep();
 			}
-			System.out.println("after sending");
+
 		}
 
 		SetStatus(temp.getNodeName(),"starting");
 		InvokeInterrupt();
-		System.out.println("before starting");
+
 		while(GetStatus(temp.getNodeName()).equals("starting"))
 		{
 			sleep();
 		}
-		System.out.println("after sending");
+
 		return temp;
 	}
 	public void updateHRange() throws Exception {
@@ -270,7 +269,7 @@ public class ECSClient implements IECSClient {
 		// sort the IECSNodeList according to hashvalue of each server in
 		// ascending
 		Collections.sort(myservers);
-		System.out.println("myservers sorted");
+
 
 		// find the hash range for each server (construct the ring)
 		if(metaData.size()==1)
@@ -437,10 +436,10 @@ public class ECSClient implements IECSClient {
 							String[] ServerInfos = ServerInfo.trim().split(
 									"\\s+");
 
-							System.out.println("ip is: " + ServerInfos[0]);
-							System.out.println("port is: " + ServerInfos[1]);
-							System.out.println("lower is: " + ServerInfos[2]);
-							System.out.println("upper is: " + ServerInfos[3]);
+							System.out.println("IP is: " + ServerInfos[0]);
+							System.out.println("PORT is: " + ServerInfos[1]);
+							System.out.println("Lower Bound is: " + ServerInfos[2]);
+							System.out.println("Upper Bound is: " + ServerInfos[3]);
 						}
 					}
 
@@ -775,7 +774,7 @@ public class ECSClient implements IECSClient {
 
 	public void setReplicas() throws Exception
 	{
-		System.out.print("before setReplicas");
+	
 		//hashed servername
 		Set<String> keys=metaData.keySet();
 		//no server exist
@@ -817,13 +816,11 @@ public class ECSClient implements IECSClient {
 			SetReplica(HashToNodeName.get(key),replica2,"replica2");
 		}
 		SetReplicaStatus();
-		System.out.print("after setReplicas");
 		return;
 	}
 
 	public void SetReplicaStatus() throws Exception
 	{
-		System.out.print("before SetReplicaStatus");
 		Set<String>hashkeys=metaData.keySet();
 		for(String hashKey:hashkeys)
 		{
@@ -843,7 +840,6 @@ public class ECSClient implements IECSClient {
 			}
 			sleep();
 		}
-		System.out.print("after SetReplicaStatus");
 	}
 	public String GetReplicaStatus(String ServerPath) throws KeeperException, InterruptedException
 	{

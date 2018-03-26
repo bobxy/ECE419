@@ -306,8 +306,6 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	public void run() {
 		try {
 			running = initKVServer();
-			System.out.println("here:"+running);
-			System.out.println("here2:"+isRunning());
 			if (serverSocket != null) {
 				while (isRunning()) {
 					try {
