@@ -57,7 +57,9 @@ public class ECSClient implements IECSClient {
 	private Collection<IECSNode> ECSNodeList;
 	//private Collection<IECSNode> activeECSNodeList;
 	private HashMap<String, String> metaData;
+	private HashMap<String, String> timeStamps;
 	private Utilities uti;
+	private FailureDetect FD;
 	//private boolean init;
 
 	private HashMap<String,String>HashToNodeName;
@@ -78,11 +80,14 @@ public class ECSClient implements IECSClient {
 		//activeECSNodeList = new ArrayList<IECSNode>();
 		metaData = new HashMap<String, String>();
 		HashToNodeName= new HashMap<String,String>();
+		timeStamps = new HashMap<String,String>();
+		FD = new FailureDetect(this);
+		FD.start();
 		//init = true;
 	}
 
 	@Override
-	public boolean start() throws Exception {
+	public boolean start_ecs() throws Exception {
 
 		List<String> childnodenames = zk.getChildren("/servers", false);
 		for (String nodename : childnodenames) {
@@ -117,7 +122,7 @@ public class ECSClient implements IECSClient {
 	}
 
 	@Override
-	public boolean stop() throws Exception, InterruptedException {
+	public boolean stop_ecs() throws Exception, InterruptedException {
 
 		List<String> childnodenames = zk.getChildren("/servers", false);
 		for (String nodename : childnodenames) {
@@ -175,7 +180,7 @@ public class ECSClient implements IECSClient {
 		
 		zk.close();
 		zk = null;
-
+		
 		return true;
 	}
 
@@ -213,26 +218,31 @@ public class ECSClient implements IECSClient {
 		{
 			sleep();
 		}
-		
+		timeStamps.put(uti.cHash(newNode.getNodeName()), "0");
 		return newNode;
 	}
 
 	public IECSNode add1Node(String cacheStrategy,int cacheSize) throws Exception
 	{
 		IECSNode temp=addNode(cacheStrategy,cacheSize);
-		String SenderHash=uti.FindNextOne(metaData, temp.getNodeHashValue());
+		
 		//need to fix
-		String Sender=HashToNodeName.get(SenderHash);
-		SetStatus(Sender,"sending");
-		System.out.println("sender is: "+Sender);
-		System.out.println("receiver is: "+temp.getNodeName());
-		InvokeInterrupt();
-		System.out.println("before sending");
-		while(GetStatus(Sender).equals("sending"))
+		if(metaData.size()!=1)
 		{
-			sleep();
+			String SenderHash=uti.FindNextOne(metaData, temp.getNodeHashValue());
+			String Sender=HashToNodeName.get(SenderHash);
+			SetStatus(Sender,"sending");
+			System.out.println("sender is: "+Sender);
+			System.out.println("receiver is: "+temp.getNodeName());
+			InvokeInterrupt();
+			System.out.println("before sending");
+			while(GetStatus(Sender).equals("sending"))
+			{
+				sleep();
+			}
+			System.out.println("after sending");
 		}
-		System.out.println("after sending");
+
 		SetStatus(temp.getNodeName(),"starting");
 		InvokeInterrupt();
 		System.out.println("before starting");
@@ -435,12 +445,12 @@ public class ECSClient implements IECSClient {
 					}
 
 					else if (sAction.equals(START)) {
-						if (start()) {
+						if (start_ecs()) {
 							System.out.println("All servers started");
 						} else
 							System.out.println("Can not start servers");
 					} else if (sAction.equals(STOP)) {
-						if (stop()) {
+						if (stop_ecs()) {
 							System.out.println("All servers stopped");
 						} else
 							System.out.println("Can not stop servers");
@@ -536,6 +546,7 @@ public class ECSClient implements IECSClient {
 				} else
 					System.out.println("Error. Type help for instructions.");
 			}
+			FD.stop();
 		} catch (Exception e) {
 			System.out.println("Error!");
 			e.printStackTrace();
@@ -723,6 +734,9 @@ public class ECSClient implements IECSClient {
 		zk.setData("/servers/"+serverName+"/replica2", null, -1);
 		zk.delete("/servers/"+serverName+"/replica2", -1);
 		
+		zk.setData("/servers/"+serverName+"/crash", null, -1);
+		zk.delete("/servers/"+serverName+"/crash", -1);
+		
 		zk.delete("/servers/" + serverName, -1);
 	}
 	private void CreatePath(String serverName, String status, int size,
@@ -733,7 +747,7 @@ public class ECSClient implements IECSClient {
 		String strategyPath = ServerPath + "/strategy";
 		String replica1Path=ServerPath+"/replica1";
 		String replica2Path=ServerPath+"/replica2";
-		
+		String crashPath=ServerPath+"/crash";
 		zk.create(ServerPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
 				CreateMode.PERSISTENT);
 		zk.create(statusPath, status.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
@@ -745,6 +759,8 @@ public class ECSClient implements IECSClient {
 		zk.create(replica1Path, "".getBytes(),
 				ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		zk.create(replica2Path, "".getBytes(),
+				ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+		zk.create(crashPath, "0".getBytes(),
 				ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 	}
 
@@ -853,21 +869,85 @@ public class ECSClient implements IECSClient {
 	public static void main(String[] args) throws IOException,
 			InterruptedException, KeeperException, NoSuchAlgorithmException {
 
-		System.out.println("1");
-
 		ECSClient cli = new ECSClient();
-		System.out.println("2");
 		try {
-			System.out.println("3" + args[0]);
 			cli.readConfig(args[0]);
-			System.out.println("4");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			System.out.println("5");
 			e.printStackTrace();
 			System.out.println("cannot load config file");
 		}
 
 		cli.run();
 	}
+	
+	// not same means true, updated
+	boolean checkTimeStamp(String ServerHash) throws KeeperException, InterruptedException
+	{
+		String currentTimeStamp=new String(zk.getData("/servers/"+HashToNodeName.get(ServerHash)+"/crash", false, zk.exists("/servers/"+HashToNodeName.get(ServerHash)+"/crash", false)));
+		boolean res=!timeStamps.get(ServerHash).equals(currentTimeStamp);
+		timeStamps.put(ServerHash, currentTimeStamp);
+		return res;
+	}
+	
+	public ArrayList<String> CheckCrash() throws KeeperException, InterruptedException
+	{
+		Set<String> ServerHash = metaData.keySet();
+		ArrayList<String> res=new ArrayList<String>();
+		for(String server: ServerHash)
+		{
+			if(!checkTimeStamp(server))
+			{
+				//crashed detected
+				System.out.println("Detected crashed server: "+HashToNodeName.get(server));
+				res.add(HashToNodeName.get(server));
+			}
+		}
+		return res;
+	}
+	
+	public void ExecuteCrash() throws NumberFormatException, UnsupportedEncodingException, NoSuchAlgorithmException, Exception
+	{
+		ArrayList<String> mycrashedlist=CheckCrash();
+		if(mycrashedlist.size()==0)
+		{
+			return;
+		}
+		ArrayList<String> strategy_sizeList=new ArrayList<String> ();
+		for(String servername:mycrashedlist)
+		{
+			if(metaData.containsKey(uti.cHash(servername)))
+			{
+				
+				String ServerInfo=metaData.get(uti.cHash(servername));
+				
+				String strategy=new String(zk.getData("/servers/"+servername+"/strategy", false, zk.exists("/servers/"+servername+"/strategy", false)));
+				String cache_size=new String(zk.getData("/servers/"+servername+"/size", false, zk.exists("/servers/"+servername+"/size", false)));
+				strategy_sizeList.add(strategy+" "+cache_size);
+				
+				String[] ServerInfos=ServerInfo.trim().split("\\s+");
+				ECSNode servNode = new ECSNode(servername, ServerInfos[0], Integer.parseInt(ServerInfos[1]));
+				
+				ECSNodeList.add(servNode);
+				
+				metaData.remove(uti.cHash(servername));
+				timeStamps.remove(uti.cHash(servername));
+				DeletePath(servername);
+				
+			}
+		}
+		
+		updateHRange();
+		InvokeInterrupt();
+		for(String strateg_size:strategy_sizeList)
+		{
+			String[] ServerInfos=strateg_size.trim().split("\\s+");
+			add1Node(ServerInfos[0], Integer.parseInt(ServerInfos[1]));
+		}
+		setReplicas();
+		moveReplicas();
+		System.out.println("Crash recovered");
+		System.out.print(PROMPT);
+	}
+	
 }

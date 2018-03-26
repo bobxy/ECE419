@@ -82,7 +82,7 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	//replicaDO;
 	private String replicaStorge;
 	private diskOperation replicaDO;
-	
+	private HeartBeat HB;
 	public KVServer(String name, String zkHostname, int zkPort)
 			throws Exception {
 		sHostname = name;
@@ -108,6 +108,8 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		
 		zk = new ZooKeeper(sZKHostname + ":" + nZKPort, 5000, this);
 		setWatch();
+		HB = new HeartBeat(this);
+		HB.start();
 	}
 
 	void setWatch() throws KeeperException, InterruptedException
@@ -705,5 +707,13 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	public String GetUpperBound()
 	{
 		return UpperBound;
+	}
+	
+	void HeartBeat() throws KeeperException, InterruptedException
+	{
+		String currentTimeStamp=new String(zk.getData("/servers/"+sHostname+"/crash", false, zk.exists("/servers/"+sHostname+"/crash", false)));
+		int incremented=Integer.parseInt(currentTimeStamp)+1;
+		String newTimeStamp=incremented+"";
+		zk.setData("/servers/"+sHostname+"/crash", newTimeStamp.getBytes(), -1);
 	}
 }

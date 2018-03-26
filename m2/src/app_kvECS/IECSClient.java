@@ -16,14 +16,14 @@ public interface IECSClient {
      * @throws Exception    some meaningfull exception on failure
      * @return  true on success, false on failure
      */
-    public boolean start() throws Exception;
+    public boolean start_ecs() throws Exception;
 
     /**
      * Stops the service; all participating KVServers are stopped for processing client requests but the processes remain running.
      * @throws Exception    some meaningfull exception on failure
      * @return  true on success, false on failure
      */
-    public boolean stop() throws Exception;
+    public boolean stop_ecs() throws Exception;
 
     /**
      * Stops all server instances and exits the remote processes.
