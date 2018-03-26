@@ -109,5 +109,7 @@ public class ECSNode implements IECSNode{
 		System.out.println("Current node name is: "+getNodeName());
 		System.out.println("Current node IP is: "+getNodeHost());
 		System.out.println("Current node port is: "+getNodePort());
+		System.out.println("Current lower bound is: "+getNodeHashRange()[0]);
+		System.out.println("Current upper bound is: "+getNodeHashRange()[1]);
     }
 }

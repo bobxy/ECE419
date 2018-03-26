@@ -111,6 +111,7 @@ public class ECSClient implements IECSClient {
 					}
 				}
 			}
+			sleep();
 		}
 		return true;
 	}
@@ -141,6 +142,7 @@ public class ECSClient implements IECSClient {
 					}
 				}
 			}
+			sleep();
 		}
 		return true;
 	}
@@ -243,6 +245,8 @@ public class ECSClient implements IECSClient {
 	}
 	public void updateHRange() throws Exception {
 
+		if(metaData.size()==0)
+			return;
 		//System.out.println(activeECSNodeList);
 		ArrayList<String> myservers=new ArrayList<String>();
 		Set<String> setServers=metaData.keySet();
@@ -264,8 +268,10 @@ public class ECSClient implements IECSClient {
 			//only 1 element
 			String Upper=myservers.get(0);
 			String value=metaData.get(myservers.get(0));
+			String[] ServerInfos=value.trim().split("\\s+");
+			value=ServerInfos[0]+" "+ServerInfos[1]+" "+Upper+" "+Upper;
 			metaData.put(Upper,
-					value+" "+Upper+" "+Upper);
+					value);
 			return;
 		}
 		
@@ -348,6 +354,7 @@ public class ECSClient implements IECSClient {
 					
 					metaData.remove(uti.cHash(servername));
 					DeletePath(servername);
+					updateHRange();
 					InvokeInterrupt();
 				}
 			}
@@ -368,6 +375,8 @@ public class ECSClient implements IECSClient {
 				String[] ServerInfos=ServerInfo.trim().split("\\s+");
 				
 				ECSNode servNode = new ECSNode(HashToNodeName.get(child), ServerInfos[0], Integer.parseInt(ServerInfos[1]));
+				servNode.setNodeHashRange(ServerInfos[2],ServerInfos[3]);
+				
 				nodeMap.put(HashToNodeName.get(child), servNode);
 			}
 		}
@@ -458,7 +467,8 @@ public class ECSClient implements IECSClient {
 								// write set ECSNodes function
 								newNodesList = addNodes(numNodes, cacheStrgy,
 										cacheSze);
-
+								setReplicas();
+								moveReplicas();
 							} else
 								System.out
 										.println("invalid strategy entered; Please enter either FIFO, LRU or LFU");
@@ -472,7 +482,8 @@ public class ECSClient implements IECSClient {
 
 						newNode = add1Node(cacheStrgy, cacheSze);
 						// start();
-
+						setReplicas();
+						moveReplicas();
 						if (newNode != null) {
 
 							System.out.println("node added successfully");
@@ -488,7 +499,8 @@ public class ECSClient implements IECSClient {
 						}
 
 						boolean removed = removeNodes(nodeNames);
-
+						setReplicas();
+						moveReplicas();
 						if (removed)
 							System.out.println("nodes successfully removed");
 						else
@@ -501,6 +513,7 @@ public class ECSClient implements IECSClient {
 						{
 							IECSNode currentNode=nodeMap.get(key);
 							currentNode.printNodeInfo();
+							System.out.println(GetReplicaStatus("/servers/"+currentNode.getNodeName()));
 						}
 						System.out.println("'get nodes successful");
 
@@ -631,66 +644,6 @@ public class ECSClient implements IECSClient {
 		fr.close();
 	}
 
-	// update hash ring
-
-	public void updateMetaData() throws Exception {
-		// set metaData znode
-
-		String metaDataPath = "/servers/metadata";
-
-		byte[] updated_metaData = uti.SerializeHashMapToByteArray(metaData);
-
-		zk.setData(metaDataPath, updated_metaData, zk
-				.exists(metaDataPath, true).getVersion());
-		/*
-		 * //create zookeeper znodes for server properties for (IECSNode
-		 * servNode:activeECSNodeList){
-		 * 
-		 * String serverPath="/servers/" + servNode.getNodeName();
-		 * 
-		 * String statusPath = serverPath+ "/status";
-		 * 
-		 * String sizePath = serverPath+ "/size";
-		 * 
-		 * String strategyPath = serverPath+ "/strategy";
-		 * 
-		 * String status = "adding";
-		 * 
-		 * String size = Integer.toString(servNode.getNodeCacheSize());
-		 * 
-		 * String strategy = servNode.getNodeStrategy();
-		 * 
-		 * byte[] statusData = status.getBytes();
-		 * 
-		 * byte[] sizeData = size.getBytes(); byte[] strategyData =
-		 * strategy.getBytes();
-		 * 
-		 * try {
-		 * 
-		 * if (zk.exists(serverPath, true) == null) zk.create(serverPath, null,
-		 * ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-		 * 
-		 * if (zk.exists(statusPath, true) != null) zk.setData(statusPath,
-		 * statusData, zk.exists(statusPath, true).getVersion()); else
-		 * zk.create(statusPath, statusData, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-		 * CreateMode.PERSISTENT);
-		 * 
-		 * if (zk.exists(sizePath, true) != null) zk.setData(sizePath, sizeData,
-		 * zk.exists(sizePath, true).getVersion()); else zk.create(sizePath,
-		 * sizeData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-		 * 
-		 * if (zk.exists(strategyPath, true) != null) zk.setData(strategyPath,
-		 * strategyData, zk.exists(strategyPath, true).getVersion()); else
-		 * zk.create(strategyPath, strategyData, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-		 * CreateMode.PERSISTENT);
-		 * 
-		 * } catch (Exception e) {
-		 * 
-		 * e.printStackTrace();
-		 * System.out.println("ECS:failed to update zNodes"); } }
-		 */
-
-	}
 
 	public String createScript(IECSNode newNode) throws IOException {
 
@@ -730,6 +683,13 @@ public class ECSClient implements IECSClient {
 
 	}
 
+	private void SetReplica(String serverName,String ReplicaHash,String order) throws KeeperException, InterruptedException
+	{
+		//order=replica1
+		//order=replica2
+		String path="/servers/"+serverName+"/"+order;
+		zk.setData(path, ReplicaHash.getBytes(), -1);
+	}
 	private void SetStatus(String serverName, String status)
 			throws KeeperException, InterruptedException {
 		String path = "/servers/" + serverName + "/status";
@@ -756,7 +716,13 @@ public class ECSClient implements IECSClient {
 
 		zk.setData("/servers/" + serverName + "/size", null, -1);
 		zk.delete("/servers/" + serverName + "/size", -1);
-
+		
+		zk.setData("/servers/"+serverName+"/replica1", null, -1);
+		zk.delete("/servers/"+serverName+"/replica1", -1);
+		
+		zk.setData("/servers/"+serverName+"/replica2", null, -1);
+		zk.delete("/servers/"+serverName+"/replica2", -1);
+		
 		zk.delete("/servers/" + serverName, -1);
 	}
 	private void CreatePath(String serverName, String status, int size,
@@ -765,6 +731,9 @@ public class ECSClient implements IECSClient {
 		String statusPath = ServerPath + "/status";
 		String sizePath = ServerPath + "/size";
 		String strategyPath = ServerPath + "/strategy";
+		String replica1Path=ServerPath+"/replica1";
+		String replica2Path=ServerPath+"/replica2";
+		
 		zk.create(ServerPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
 				CreateMode.PERSISTENT);
 		zk.create(statusPath, status.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
@@ -772,6 +741,10 @@ public class ECSClient implements IECSClient {
 		zk.create(sizePath, Integer.toString(size).getBytes(),
 				ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		zk.create(strategyPath, strategy.getBytes(),
+				ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+		zk.create(replica1Path, "".getBytes(),
+				ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+		zk.create(replica2Path, "".getBytes(),
 				ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 	}
 
@@ -784,6 +757,99 @@ public class ECSClient implements IECSClient {
 	}
 	// ///////////main
 
+	public void setReplicas() throws Exception
+	{
+		System.out.print("before setReplicas");
+		//hashed servername
+		Set<String> keys=metaData.keySet();
+		//no server exist
+		
+		if(keys.size()==0)
+		{
+			return;
+		}
+		
+		if(keys.size()==1)
+		{	
+			Iterator<String> keyIterator=keys.iterator();
+			String ReplicaName=keyIterator.next();
+			SetReplica(HashToNodeName.get(ReplicaName),"","replica1");
+			SetReplica(HashToNodeName.get(ReplicaName),"","replica2");
+			SetReplicaStatus();
+			return;
+		}
+		
+		if(keys.size()==2)
+		{
+			Iterator<String> keyIterator=keys.iterator();
+			String serverNameHash1=keyIterator.next();
+			String serverNameHash2=keyIterator.next();
+			
+			SetReplica(HashToNodeName.get(serverNameHash1),serverNameHash2,"replica1");
+			SetReplica(HashToNodeName.get(serverNameHash1),"","replica2");
+			
+			SetReplica(HashToNodeName.get(serverNameHash2),serverNameHash1,"replica1");
+			SetReplica(HashToNodeName.get(serverNameHash2),"","replica2");
+			SetReplicaStatus();
+			return;
+		}
+		for(String key:keys)
+		{
+			String replica1 = uti.FindNextOne(metaData, key);
+			SetReplica(HashToNodeName.get(key),replica1,"replica1");
+			String replica2 = uti.FindNextOne(metaData, replica1);
+			SetReplica(HashToNodeName.get(key),replica2,"replica2");
+		}
+		SetReplicaStatus();
+		System.out.print("after setReplicas");
+		return;
+	}
+
+	public void SetReplicaStatus() throws Exception
+	{
+		System.out.print("before SetReplicaStatus");
+		Set<String>hashkeys=metaData.keySet();
+		for(String hashKey:hashkeys)
+		{
+			SetStatus(HashToNodeName.get(hashKey),"settingReplica");
+		}
+		InvokeInterrupt();
+		int count=0;
+		while(count!=metaData.size())
+		{
+			count=0;
+			for(String hashKey:hashkeys)
+			{
+				if(!GetStatus(HashToNodeName.get(hashKey)).equals("settingReplica"))
+				{
+					count+=1;
+				}
+			}
+			sleep();
+		}
+		System.out.print("after SetReplicaStatus");
+	}
+	public String GetReplicaStatus(String ServerPath) throws KeeperException, InterruptedException
+	{
+		String HashReplica1=new String( zk.getData(ServerPath+"/replica1", false, zk.exists(ServerPath+"/replica1", false)));
+		String HashReplica2=new String( zk.getData(ServerPath+"/replica2", false, zk.exists(ServerPath+"/replica2", false)));
+		return "Replica1 is: "+HashReplica1+",Replica2 is: "+HashReplica2;
+	}
+	
+	public void moveReplicas() throws Exception
+	{
+		Set<String> keys=metaData.keySet();
+		for(String hashServerName:keys)
+		{
+			String ServerName=HashToNodeName.get(hashServerName);
+			SetStatus(ServerName,"sendingReplica");
+			InvokeInterrupt();
+			while(GetStatus(ServerName).equals("sendingReplica"))
+			{
+				sleep();
+			}
+		}
+	}
 	public static void main(String[] args) throws IOException,
 			InterruptedException, KeeperException, NoSuchAlgorithmException {
 

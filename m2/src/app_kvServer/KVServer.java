@@ -71,12 +71,14 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 	private String ServerStatusPath;
 	private String ServerStrategyPath;
 	private String ServerSizePath;
-	private String ServerReplicaPath;
+	//private String ServerReplicaPath;
 	private String LowerBound;
 	private String UpperBound;
 	private String HashedName;
 	private String CurrentStatus;
 	
+	private String HashReplica1;
+	private String HashReplica2;
 	//replicaDO;
 	private String replicaStorge;
 	private diskOperation replicaDO;
@@ -100,7 +102,9 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		ServerStatusPath=ServerPath+"/status";
 		ServerStrategyPath=ServerPath+"/strategy";
 		ServerSizePath=ServerPath+"/size";
-		ServerReplicaPath=ServerPath+"/replica";
+		
+		HashReplica1="";
+		HashReplica2="";
 		
 		zk = new ZooKeeper(sZKHostname + ":" + nZKPort, 5000, this);
 		setWatch();
@@ -165,7 +169,8 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		DO.put(key, value);
 		cache.put(key, value);
 		//sent to my replica
-		//putKVToReplica(key,value);
+		putKVToReplica(key,value,HashReplica1);
+		putKVToReplica(key,value,HashReplica2);
 	}
 
 	@Override
@@ -585,18 +590,16 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 						this.unlockWrite();
 						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
 					}
-					else if(status.equals("clearingReplica"))
+					else if(status.equals("settingReplica"))
 					{
 						replicaDO.clearStorage();
+						GetReplicaStatus();
 						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
 					}
 					else if(status.equals("sendingReplica"))
 					{
-						Set<String> mykeys=DO.getKeySet();
-						for(String key:mykeys)
-						{
-							putKVToReplica(key,DO.get(key));
-						}
+						putKVToReplicaServerToServer(HashReplica1);
+						putKVToReplicaServerToServer(HashReplica2);
 						zk.setData(ServerStatusPath, CurrentStatus.getBytes(), -1);
 					}
 
@@ -607,6 +610,11 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		}
 	}
 	
+	public void GetReplicaStatus() throws KeeperException, InterruptedException
+	{
+		HashReplica1=new String( zk.getData(ServerPath+"/replica1", false, zk.exists(ServerPath+"/replica1", false)));
+		HashReplica2=new String( zk.getData(ServerPath+"/replica2", false, zk.exists(ServerPath+"/replica2", false)));
+	}
 	public boolean IsResponsible(String HashedKey, String currentLower, String currentUpper)
 	{
 		if(metadataMap.size() == 1)
@@ -633,21 +641,62 @@ public class KVServer extends Thread implements IKVServer, Runnable, Watcher {
 		return false;
 	}
 	
-	public void putKVToReplica(String key,String value) throws Exception
+	public boolean IsReplicaResponsible(String Hashedkey)
 	{
-		List<String> replicas=zk.getChildren(ServerReplicaPath, false);
-		for(String replica:replicas)
+		if(metadataMap.size() <= 3)
+			return true;
+		else
 		{
-			String ServerInfo=metadataMap.get(replica);
-			String[] ServerInfos=ServerInfo.trim().split("\\s+");
-			String DestinationAddress=ServerInfos[0];
-			int DestinationPort=Integer.parseInt(ServerInfos[1]);
-			ServerKVStore = new KVStore(DestinationAddress, DestinationPort);
-			ServerKVStore.connect();
-			ServerKVStore.putNoCache(key, value);
-			ServerKVStore.disconnect();
+			String closer = myutilities.FindBeforeOne(metadataMap, HashedName);
+			String middle = myutilities.FindBeforeOne(metadataMap, closer);
+			String farther = myutilities.FindBeforeOne(metadataMap, middle);
+			return IsResponsible(Hashedkey, farther, closer);
 		}
 	}
+	//need to fix
+	public void putKVToReplica(String key,String value,String replica) throws Exception
+	{
+		if(replica.equals(""))
+			return;
+
+		String ServerInfo=metadataMap.get(replica);
+		
+		String[] ServerInfos=ServerInfo.trim().split("\\s+");
+		
+		String DestinationAddress=ServerInfos[0];
+		
+		int DestinationPort=Integer.parseInt(ServerInfos[1]);
+		
+		ServerKVStore = new KVStore(DestinationAddress, DestinationPort);
+		ServerKVStore.connect();
+		ServerKVStore.putNoCache(key, value);
+		ServerKVStore.disconnect();
+
+	}
+	public void putKVToReplicaServerToServer(String replica) throws Exception
+	{
+		if(replica.equals(""))
+			return;
+		Set<String> mykeys=DO.getKeySet();
+		
+		String ServerInfo=metadataMap.get(replica);
+		
+		String[] ServerInfos=ServerInfo.trim().split("\\s+");
+		
+		String DestinationAddress=ServerInfos[0];
+		
+		int DestinationPort=Integer.parseInt(ServerInfos[1]);
+		
+		ServerKVStore = new KVStore(DestinationAddress, DestinationPort);
+		ServerKVStore.connect();
+		for(String key:mykeys)
+		{
+			ServerKVStore.putNoCache(key, getKV(key));
+		}
+		ServerKVStore.disconnect();
+
+	}
+	
 	public String GetLowerBound()
 	{
 		return LowerBound;

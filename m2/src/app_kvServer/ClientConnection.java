@@ -135,7 +135,7 @@ public class ClientConnection implements Runnable {
 							} else if (message.getStatus() == StatusType.GET) {
 								if (kvs.IsResponsible(sKeyHash,
 										kvs.GetLowerBound(),
-										kvs.GetUpperBound())) {
+										kvs.GetUpperBound()) || kvs.IsReplicaResponsible(sKeyHash)) {
 									if (util.InvaildKey(sKey))
 										sRet = "1 " + sKey;
 									else {
