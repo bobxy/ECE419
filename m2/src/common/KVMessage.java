@@ -20,9 +20,6 @@ public interface KVMessage {
 		SERVER_NOT_RESPONSIBLE,  /* Request not successful, server not responsible for key 11*/
 		
 		PUT_WITHOUT_CACHING,
-		SUBSCRIBE,
-		UNSUBSCRIBE,
-		SUBSCRIBE_SUCCESS
 	}
 
 	/**
