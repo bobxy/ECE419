@@ -31,9 +31,6 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.*;
 
-import common.ServerConfiguration;
-import common.ServerConfigurations;
-
 import Utilities.Utilities;
 
 import ecs.ECSNode;

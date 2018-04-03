@@ -7,8 +7,6 @@ import java.io.Serializable;
 import java.io.*;
 import java.util.*;
 
-import common.ServerConfiguration;
-import common.ServerConfigurations;
 import common.KVMessage.StatusType;
 
 import java.io.UnsupportedEncodingException;
@@ -144,42 +142,10 @@ public class Utilities {
 		ObjectInputStream in = new ObjectInputStream(bis);
 		return (HashMap<String,String>)in.readObject();
 	}
-	
-	public byte[] SerializableToByteArray(ServerConfigurations sc) throws Exception
-	{
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutputStream out = new ObjectOutputStream(bos);
-		out.writeObject(sc);
-		out.flush();
-		return bos.toByteArray();
-	}
-	
-	public ServerConfigurations ByteArrayToSerializable(byte[] ba) throws Exception
-	{
-		ByteArrayInputStream bis = new ByteArrayInputStream(ba);
-		ObjectInputStream in = new ObjectInputStream(bis);
-		return (ServerConfigurations)in.readObject();
-	}
-	
+
 	public String StatusCodeToString(StatusType status)
 	{
 		return Integer.toString(status.ordinal());
-	}
-	
-	public byte[] ServerConfigSerializableToByteArray(ServerConfiguration sc) throws Exception
-	{
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutput out = new ObjectOutputStream(bos);
-		out.writeObject(sc);
-		out.flush();
-		return bos.toByteArray();
-	}
-	
-	public ServerConfiguration ServerConfigByteArrayToSerializable(byte[] ba) throws Exception
-	{
-		ByteArrayInputStream bis = new ByteArrayInputStream(ba);
-		ObjectInput in = new ObjectInputStream(bis);
-		return (ServerConfiguration)in.readObject();
 	}
 	
 	public String FindNextOne(HashMap<String,String> mymap,String hashname)

@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
-import common.ServerConfigurations;
-
 public interface IKVServer {
     public enum CacheStrategy {
         None,

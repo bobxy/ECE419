@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import logger.LogSetup;
@@ -33,10 +34,17 @@ public class KVClient implements IKVClient {
 	private static final String SKIP = "skip";
 	private static final String TEST = "test";
 	private static final String DISCONNECT = "disconnect";
+	private static final String TRANSACTION = "transaction";
+	private static final String COMMIT = "commit";
 	private static final String LOGLEVEL = "logLevel";
+	private static final String SUBSCRIBE = "subscribe";
+	private static final String UNSUBSCRIBE = "unsubscribe";
 	private KVStore KVS;
 	private Utilities util;
 	private Logger logger = Logger.getRootLogger();
+	private HashMap<String, String> ToBeCommitted;
+	public HashMap<String, String> Subscriptions;
+	private boolean bInTransaction;
 	
     @Override
     public void newConnection(String hostname, int port) throws Exception{
@@ -44,6 +52,8 @@ public class KVClient implements IKVClient {
     	util = new Utilities();
     	KVS = new KVStore(hostname, port);
     	KVS.connect();
+    	ToBeCommitted = new HashMap<String, String>();
+    	bInTransaction = false;
     	//KVS.start();
     	logger.info("New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
     	return;
@@ -72,17 +82,13 @@ public class KVClient implements IKVClient {
     					break;
     				else if(sAction.equals(GET))
     				{
-    					if(KVS != null)
+    					if(IsConnected())
     						ValidateReturnedMessage(get(sElements[1]));
-    					else
-    						System.out.println("Error. Please connect to a server.");
     				}
     				else if(sAction.equals(PUT))
     				{
-    					if(KVS != null)
+    					if(IsConnected())
     						ValidateReturnedMessage(put(sElements[1], sElements[2]));
-    					else
-    						System.out.println("Error. Please connect to a server.");
     				}
     				else if(sAction.equals(CONNECT))
     					newConnection(sElements[1], Integer.parseInt(sElements[2]));
@@ -97,6 +103,43 @@ public class KVClient implements IKVClient {
     					continue;
     				else if(sAction.equals(TEST))
     					newConnection("localhost", 6666);
+    				else if(sAction.equals(TRANSACTION))
+    				{
+    					if(IsConnected())
+    					{
+	    					if(InTransaction())
+	    						System.out.println("Already in a transaction.");
+	    					else
+	    					{
+	    						bInTransaction = true;
+	    						System.out.println("Entered a new transaction.");
+	    					}
+    					}
+    				}
+    				else if(sAction.equals(COMMIT))
+    				{
+    					if(InTransaction())
+    					{
+    						if(IsConnected())
+    						{
+	    						bInTransaction = false;
+	    						if(commit())
+	    							System.out.println("Changes committed. Out of transaction");
+	    						else
+	    							System.out.println("Nothing to commit. Out of transaction");
+    						}
+    					}
+    					else
+    						System.out.println("Not in a transaction.");
+    				}
+    				else if(sAction.equals(SUBSCRIBE))
+    				{
+    					subscribe(sElements[1]);
+    				}
+    				else if(sAction.equals(UNSUBSCRIBE))
+    				{
+    					unsubscribe(sElements[1]);
+    				}
     			}
     			else
     				System.out.println("Error. Type help for instructions.");
@@ -121,7 +164,7 @@ public class KVClient implements IKVClient {
 	    	String[] sElements = sCommand.split(" ");
 	    	int nElementCount = sElements.length;
 	    	//help, quit, disconnect
-	    	if(sCommand.equals(HELP) || sCommand.equals(QUIT) || sCommand.equals(TEST) || sCommand.equals(DISCONNECT))
+	    	if(sCommand.equals(HELP) || sCommand.equals(QUIT) || sCommand.equals(TEST) || sCommand.equals(DISCONNECT) || sCommand.equals(TRANSACTION) || sCommand.equals(COMMIT))
 	    	{
 	    		String[] ret = {sCommand};
 	    		return ret;
@@ -135,7 +178,7 @@ public class KVClient implements IKVClient {
 	    	String sKey = sElements[1];
 	    	
 	    	//get command
-	    	if(sAction.equals(GET) && nElementCount == 2)
+	    	if((sAction.equals(GET) || sAction.equals(SUBSCRIBE) || sAction.equals(UNSUBSCRIBE)) && nElementCount == 2)
 	    	{
 	    		String[] ret = {sAction, sKey};
 	    		return ret;
@@ -217,7 +260,17 @@ public class KVClient implements IKVClient {
     }
     
     private KVMessage get(String key) throws Exception {
-    	return KVS.get(key);
+    	if(InTransaction())
+    	{
+    		if(ToBeCommitted.containsKey(key))
+    		{
+    			return new KVMessageC(key, ToBeCommitted.get(key), StatusType.GET_SUCCESS);
+    		}
+    		else
+    			return KVS.get(key);
+    	}
+    	else
+    		return KVS.get(key);
     }
     
     private KVMessage put(String key, String value) throws Exception {
@@ -226,7 +279,16 @@ public class KVClient implements IKVClient {
     		KVMessageC message = new KVMessageC(key, value, StatusType.PUT_ERROR);
     		return message;
     	}
-    	KVMessage message = KVS.put(key, value);
+    	KVMessage message;
+    	if(InTransaction())
+    	{
+    		ToBeCommitted.put(key, value);
+    		message = new KVMessageC(key, value, StatusType.PUT_SUCCESS);
+    	}
+    	else
+    	{
+    		message = KVS.put(key, value);
+    	}
     	return message;
     }
     
@@ -288,10 +350,65 @@ public class KVClient implements IKVClient {
     		System.out.println("Invalid LogLevel.");
     }
     
+    private boolean InTransaction()
+    {
+    	return bInTransaction;
+    }
+    
+    private boolean commit() throws Exception
+    {
+    	if(ToBeCommitted.isEmpty())
+    	{
+    		return false;
+    	}
+    	Set<String> keys = ToBeCommitted.keySet();
+    	for(String key : keys)
+    	{
+    		ValidateReturnedMessage(KVS.put(key, ToBeCommitted.get(key)));
+    	}
+    	ToBeCommitted.clear();
+    	return true;
+    }
+    
+    private void subscribe(String key) throws Exception
+    {
+    	if(IsConnected())
+    	{
+    		KVMessage message = get(key);
+    		if(message.getStatus() == StatusType.GET_SUCCESS)
+    		{
+    			String sValue = message.getValue();
+    			System.out.println("Subscribed to key: " + key + ". Current value: " + sValue);
+    			Subscriptions.put(key, sValue);
+    		}
+    		else if(message.getStatus() == StatusType.GET_ERROR)
+    		{
+    			System.out.println("Subscribed to key: " + key + ", which does not exist at this moment.");
+    			Subscriptions.put(key, "");
+    		}
+    	}
+    }
+    
+    private void unsubscribe(String key) throws Exception
+    {
+    	System.out.println("Unsubscribed to key: " + key + ".");
+    	Subscriptions.remove(key);
+    }
+    
+    private boolean IsConnected()
+    {
+    	boolean bConnected = (KVS != null);
+    	if(!bConnected)
+    		System.out.println("Error. Please connect to a server.");
+    	return bConnected;
+    }
+    
     public static void main(String[] args) throws Exception{
     	BasicConfigurator.configure();
     	new LogSetup("logs/client.log", Level.ALL);
     	KVClient cli = new KVClient();
+    	SubscriptionService SS = new SubscriptionService(cli);
+    	SS.start();
     	cli.run();
     }
 }

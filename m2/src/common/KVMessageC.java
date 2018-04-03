@@ -55,15 +55,6 @@ public class KVMessageC implements KVMessage{
 	@Override
 	public IECSNode getResponsibleServer()
 	{
-		try
-		{
-			ServerConfigurations sc = new ServerConfigurations();
-			return new ECSNode(sc.FindServerForKey(key));
-		}
-		catch(Exception e)
-		{
-			System.out.println("Client> " + "Error! " + "KVMessageC::getResponsibleServer");
-		}
 		return null;
 	}
 }
