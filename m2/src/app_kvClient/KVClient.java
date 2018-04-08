@@ -43,8 +43,9 @@ public class KVClient implements IKVClient {
 	private Utilities util;
 	private Logger logger = Logger.getRootLogger();
 	private HashMap<String, String> ToBeCommitted;
-	public HashMap<String, String> Subscriptions;
+	//public HashMap<String, String> Subscriptions;
 	private boolean bInTransaction;
+	private SubscriptionService SS;
 	
     @Override
     public void newConnection(String hostname, int port) throws Exception{
@@ -53,7 +54,11 @@ public class KVClient implements IKVClient {
     	KVS = new KVStore(hostname, port);
     	KVS.connect();
     	ToBeCommitted = new HashMap<String, String>();
+    	//Subscriptions = new HashMap<String, String>();
     	bInTransaction = false;
+    	logger.setLevel(Level.OFF);
+    	SS = new SubscriptionService(this);
+    	new Thread(SS).start();
     	//KVS.start();
     	logger.info("New connection created. Host: " + hostname + " Port: " + Integer.toString(port));
     	return;
@@ -379,12 +384,12 @@ public class KVClient implements IKVClient {
     		{
     			String sValue = message.getValue();
     			System.out.println("Subscribed to key: " + key + ". Current value: " + sValue);
-    			Subscriptions.put(key, sValue);
+    			SS.Subscribe(key, sValue, true);
     		}
     		else if(message.getStatus() == StatusType.GET_ERROR)
     		{
     			System.out.println("Subscribed to key: " + key + ", which does not exist at this moment.");
-    			Subscriptions.put(key, "");
+    			SS.Subscribe(key, "", true);
     		}
     	}
     }
@@ -392,7 +397,7 @@ public class KVClient implements IKVClient {
     private void unsubscribe(String key) throws Exception
     {
     	System.out.println("Unsubscribed to key: " + key + ".");
-    	Subscriptions.remove(key);
+    	SS.Subscribe(key, "", false);
     }
     
     private boolean IsConnected()
@@ -407,8 +412,8 @@ public class KVClient implements IKVClient {
     	BasicConfigurator.configure();
     	new LogSetup("logs/client.log", Level.ALL);
     	KVClient cli = new KVClient();
-    	SubscriptionService SS = new SubscriptionService(cli);
-    	SS.start();
+    	//SubscriptionService SS = new SubscriptionService(cli);
+    	//new Thread(SS).start();
     	cli.run();
     }
 }

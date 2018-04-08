@@ -1,5 +1,6 @@
 package app_kvClient;
 
+import java.util.HashMap;
 import java.util.Set;
 
 import common.KVMessage;
@@ -7,13 +8,17 @@ import common.KVMessage.StatusType;
 
 import client.KVStore;
 
-public class SubscriptionService extends Thread{
+public class SubscriptionService implements Runnable{
 	private KVClient client;
 	private KVStore kvs;
+	private HashMap<String, String> Subscriptions;
+	boolean free;
 	public SubscriptionService(KVClient cli)
 	{
 		client = cli;
 		kvs = null;
+		Subscriptions = new HashMap<String, String>();
+		free = true;
 	}
 	public void run()
 	{
@@ -22,27 +27,29 @@ public class SubscriptionService extends Thread{
 			while(true)
 			{
 				UpdateKVS();
-				Set<String> subscription = client.Subscriptions.keySet();
+				Enter();
+				Set<String> subscription = Subscriptions.keySet();
 				for(String key : subscription)
 				{
 					KVMessage message = kvs.get(key);
 					if(message.getStatus() == StatusType.GET_SUCCESS)
 					{
 						String sNewValue = message.getValue();
-						String sOldValue = client.Subscriptions.get(key);
+						String sOldValue = Subscriptions.get(key);
 						if(!sNewValue.equals(sOldValue))
 						{
 							Notification(key, sOldValue, sNewValue);
-							client.Subscriptions.put(key, sNewValue);
+							Subscriptions.put(key, sNewValue);
 						}
 					}
 					else if(message.getStatus() == StatusType.GET_ERROR)
 					{
 						System.out.println("The key-value pair with key <" + key + "> has been removed.");
-						client.Subscriptions.put(key, "");
+						Subscriptions.put(key, "");
 					}
 				}
-				Thread.sleep(10000);
+				Exit();
+				Thread.sleep(1000);
 			}
 		}catch (Exception e) {
 			e.printStackTrace();
@@ -69,10 +76,38 @@ public class SubscriptionService extends Thread{
 	
 	private void Notification(String sKey, String sOldValue, String sNewValue)
 	{
+		System.out.println();
 		if(sOldValue.isEmpty())
 			System.out.println("(" + sKey + ", " + sNewValue + ") added.");
 		else
 			System.out.println("(" + sKey + ", " + sOldValue + ") changed to (" + sKey + ", " + sNewValue + ").");
-		System.out.println("Client> ");
+		System.out.print("Client> ");
+	}
+	
+	private void Enter()
+	{
+		while(!free);
+		free = false;
+	}
+	
+	private void Exit()
+	{
+		free = true;
+	}
+	
+	public void Subscribe(String key, String value, boolean bSubscribe)
+	{
+		Enter();
+		if(bSubscribe)
+		{
+			Subscriptions.put(key, value);
+		}
+		else
+		{
+			if(Subscriptions.containsKey(key))
+				Subscriptions.remove(key);
+		}
+		Exit();
+		return;
 	}
 }
