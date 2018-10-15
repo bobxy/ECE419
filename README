@@ -1,2 +1,13 @@
-This is the repository for ECE419.
-It has the full implementation.
+The code here is for the course project of University of Toronto course ECE419 Distributed System. 
+The whole projects took us days and nights to finish. But the final outcomes were pretty good.
+
+We designed our own database system from scratch.
+Here are a few highlights:
+We used append-only strategy, we used memory mapping file for fast I/O performance.
+It offers three caching mechanisms.
+It has crash recovery feature.
+It also has load balance feature.
+We designed our own protocol to transmit the data amongs the server and clients.
+
+I would say this implementation can be referred as a great example.
+Feel free to post any questions.
